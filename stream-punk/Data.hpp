@@ -1,5 +1,13 @@
 # pragma once
 # include "StreamPunk.hpp"
+# include <array>
+# include <forward_list>
+# include <bitset>
+# include <optional>
+# include <filesystem>
+# include <atomic>
+# include <variant>
+# include <tuple>
 # include <boost/predef.h>
 
 constexpr inline u32 currDataVer = makeVersion(0, 0, 1, 0);
@@ -111,6 +119,180 @@ inline I& operator>>(I& s, StreamPunkMachineInfo& v) { s.s.read(reinterpret_cast
 /*
     这是单元测试的一部分 也是一个使用示例
 */
+
+struct AllBasicTypes : public Base {
+#define Xt_AllBasicTypes(X__) \
+    X__(bl  , b     , false) \
+    X__(i8  , i8_v  , 0) \
+    X__(u8  , u8_v  , 0) \
+    X__(i16 , i16_v , 0) \
+    X__(u16 , u16_v , 0) \
+    X__(i32 , i32_v , 0) \
+    X__(u32 , u32_v , 0) \
+    X__(i64 , i64_v , 0) \
+    X__(u64 , u64_v , 0) \
+    X__(f32 , f     , 0.0f) \
+    X__(f64 , d     , 0.0) \
+    X__(ch  , c     , 0) \
+    X__(ch8 , c8    , 0) \
+    X__(ch16, c16   , 0) \
+    X__(ch32, c32   , 0) \
+
+    AllBasicTypes() = default;
+    UseData(AllBasicTypes);
+};
+
+struct TemplateContainer : public Base {
+
+#define Xt_TemplateContainer(X__) \
+    X__(std::string, s, "") \
+    X__(std::u8string, u8s, u8"") \
+    X__(std::vector<int>, vec, {}) \
+    X__(std::deque<double>, deq, {}) \
+    X__(std::list<std::string>, lst, {}) \
+    X__(std::forward_list<u16>, shortForwardList, {}) \
+    X__(std::set<unsigned>, uintSet, {}) \
+    X__(std::unordered_set<std::string>, stringHashSet, {}) \
+    X__(std::map<int DH std::string>, intStringMap, {}) \
+    X__(std::unordered_map<std::string DH float>, stringFloatHashMap, {})
+	
+    TemplateContainer() = default;
+    UseData(TemplateContainer);
+
+};
+
+struct ComplexTemplateNesting : public Base {
+
+ 	using NestedVector = std::vector<std::vector<std::vector<u64>>>;
+ 	using ArrayOfVectors = std::vector<std::vector<f32>>;
+ 	using MapOfVectors = std::map<std::string, std::vector<u32>>;
+    using SetOfVectors = std::set<std::vector<i64>>;
+
+ 	using NestedTuple = std::tuple<u16,std::tuple<f64, std::string>,std::vector<std::tuple<i32, f32>>>;
+ 	using OptionalCollection = std::vector<std::optional<std::string >>;
+ 	using VariantVector = std::vector<std::variant<u8, f64, std::string>>;
+ 		
+#define Xt_ComplexTemplateNesting(X__) \
+ 	X__(NestedVector, nestedVectors, {}) \
+ 	X__(ArrayOfVectors, arrayVectors, {}) \
+ 	X__(MapOfVectors, mapVectors, {}) \
+ 	X__(SetOfVectors, setVecs, {}) \
+
+ 	/*
+    X__(NestedTuple, complexTuple, {}) \
+ 	X__(OptionalCollection, optStrings, {}) \
+ 	X__(VariantVector, varVec, {}) \
+    */
+ 		    
+ 	ComplexTemplateNesting() = default;
+ 	UseData(ComplexTemplateNesting);
+};
+
+struct ComprehensiveContainer : public Base {
+#define Xt_ComprehensiveContainer(X__) \
+    X__(std::vector<Sptr<AllBasicTypes>>, vec_sptr_all_basic, {}) \
+    X__(std::deque<Uptr<TemplateContainer>>, deq_uptr_template_container, {}) \
+    X__(std::list<std::string>, list_string, {}) \
+    X__(std::forward_list<Sptr<ComplexTemplateNesting>>, flist_sptr_complex, {}) \
+    X__(std::set<int>, set_int, {}) \
+    X__(std::unordered_set<std::string>, uset_string, {}) \
+    X__(std::map<std::string DH Sptr<AllBasicTypes>>, map_str_sptr_all_basic, {}) \
+    X__(std::unordered_map<int DH Uptr<TemplateContainer>>, umap_int_uptr_template_container, {}) \
+    X__(Wptr<ComprehensiveContainer>, self_wptr, {}) \
+    X__(Sptr<ComprehensiveContainer>, self_sptr, {}) \
+
+    ComprehensiveContainer() = default;
+    UseData(ComprehensiveContainer);
+};
+
+struct PointerContainer : public Base {
+#define Xt_PointerContainer(X__) \
+    X__(int*, raw_ptr, nullptr) \
+    X__(Sptr<int>, shared_ptr_int, {}) \
+    X__(Uptr<int>, unique_ptr_int, {})
+
+    PointerContainer() = default;
+    UseData(PointerContainer);
+};
+
+struct Child : public AllBasicTypes {
+#define Xt_Child(X__) \
+    X__(int, child_field, 100)
+
+    Child() = default;
+    UseDataBase(Child, AllBasicTypes);
+};
+
+struct SelfReferential : public Base {
+#define Xt_SelfReferential(X__) \
+    X__(Sptr<SelfReferential>, self_ptr, {})
+
+    SelfReferential() = default;
+    UseData(SelfReferential);
+};
+
+struct TemplateAndPointer : public Base {
+#define Xt_TemplateAndPointer(X__) \
+    X__(std::vector<int*>, v_raw_ptr, {}) \
+    X__(std::map<std::string DH Sptr<int>>, m_str_shared_ptr, {})
+
+    TemplateAndPointer() = default;
+    UseData(TemplateAndPointer);
+};
+
+struct InheritanceAndSelfReference : public Child {
+#define Xt_InheritanceAndSelfReference(X__) \
+    X__(Sptr<InheritanceAndSelfReference>, self_ptr, {})
+
+    InheritanceAndSelfReference() = default;
+    UseDataBase(InheritanceAndSelfReference, Child);
+};
+
+struct MegaComplexClass : public Child {
+#define Xt_MegaComplexClass(X__) \
+	X__(std::vector<Sptr<TemplateAndPointer>>, complex_vector, {}) \
+	X__(SelfReferential*, raw_self_ref_ptr, nullptr) \
+	X__(Sptr<MegaComplexClass>, self_ptr, {})
+
+	MegaComplexClass() = default;
+	UseDataBase(MegaComplexClass, Child);
+};
+
+struct SuperComplexContainer : public Base {
+    // 从最内层向外逐层定义别名
+    using PathSet = std::set<std::filesystem::path>;
+    using PathSetDeque = std::deque<PathSet>;
+    using ArrayType = std::array<char, 8>;
+    using VariantElement = std::variant<ArrayType, PathSetDeque>;
+    using VariantList = std::list<VariantElement>;
+    using ComplexTuple = std::tuple<
+        std::shared_ptr<SelfReferential>,  // 假设Sptr=std::shared_ptr
+        std::unique_ptr<PointerContainer>, // 假设Uptr=std::unique_ptr
+        VariantList
+    >;
+    using OptionalTuple = std::optional<ComplexTuple>;
+    using ComplexVector = std::vector<OptionalTuple>;
+    using ComplexMap = std::map<std::string, ComplexVector>; // 关键：作为成员类型
+
+#define Xt_SuperComplexContainer(X__) \
+    X__(std::bitset<64>, bits, {}) \
+    X__(std::optional<int>, opt_int, {}) \
+    X__(std::filesystem::path, file_path, {}) \
+    X__(int, atomic_placeholder, 0) \
+    X__(Sptr<Test>, sptr_test, {}) \
+    X__(Wptr<Test>, wptr_test, {}) \
+    X__(Uptr<Test>, uptr_test, {}) \
+    X__(std::tuple<double DH std::string DH bool>, tuple_member, {}) \
+    X__(std::map<std::string DH std::unordered_map<int DH double>>, map_of_umaps, {}) \
+    X__(std::variant<int DH std::string DH Sptr<AllBasicTypes>>, variant_member, {}) \
+    X__(std::deque<std::list<std::forward_list<int>>>, deq_list_flist, {}) \
+    X__(std::vector<std::array<std::string DH 5>>, vec_arr_str, {}) \
+    X__(std::set<std::vector<std::string>>, set_of_usets, {}) \
+    X__(ComplexMap, kitchen_sink, {})
+
+	SuperComplexContainer() = default;
+	UseData(SuperComplexContainer);
+};
 
 // 注意, 禁止关于Base的菱形继承!
 struct Test :public Base {
@@ -274,5 +456,24 @@ struct MultiLevelContainer : public Base {
 
     MultiLevelContainer() = default;
     UseData(MultiLevelContainer);
+};
+
+
+struct SptrTest :public Base {
+# define Xt_SptrTest(X__) \
+    X__(Sptr<std::vector<Sptr<Device>>>, test1, nullptr) \
+
+    SptrTest() = default;
+    UseData(SptrTest);
+};
+
+
+struct MousePosition : public Base {
+# define Xt_MousePosition(X__) \
+    X__(i32, x, 0) \
+    X__(i32, y, 0) \
+
+    MousePosition() = default;
+    UseData(MousePosition);
 };
 

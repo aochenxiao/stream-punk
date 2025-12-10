@@ -68,7 +68,7 @@ REG_TEST(concat_arrays_large_array_v0_1_2) {
     constexpr MaliuTokenArr<1000> large_arr = [] {
         MaliuTokenArr<1000> arr{};
         for (size_t i = 0; i < 1000; ++i) {
-            arr[i] = i;
+            arr[i] = (MaliuToken)i;
         }
         return arr;
     }();
@@ -119,21 +119,21 @@ REG_TEST(concat_arrays_complex_combination_v0_1_2) {
 REG_TEST(test_basic_types_v0_1_2) {
     constexpr auto u8_desc = TypeDesc<u8>::v;
     ck_assert_uint_eq(u8_desc.size(), 1);
-    ck_assert_uint_eq(u8_desc[0], maliu::u8);
+    ck_assert_uint_eq(u8_desc[0], E_type::u8);
 
     constexpr auto f32_desc = TypeDesc<f32>::v;
     ck_assert_uint_eq(f32_desc.size(), 1);
-    ck_assert_uint_eq(f32_desc[0], maliu::f32);
+    ck_assert_uint_eq(f32_desc[0], E_type::f32);
 
     constexpr auto bl_desc = TypeDesc<bl>::v;
     ck_assert_uint_eq(bl_desc.size(), 1);
-    ck_assert_uint_eq(bl_desc[0], maliu::bl);
+    ck_assert_uint_eq(bl_desc[0], E_type::bl);
 
     // 字符串类型应该有特殊令牌
     auto string_desc = TypeDesc<std::string>::v;
     ck_assert_uint_eq(string_desc.size(), 2);
-    ck_assert_uint_eq(string_desc[0], maliu::E::string);
-    ck_assert_uint_eq(string_desc[1], maliu::ch);
+    ck_assert_uint_eq(string_desc[0], E_type::string);
+    ck_assert_uint_eq(string_desc[1], E_type::ch);
 }
 
 // 测试容器类型令牌生成
@@ -141,26 +141,26 @@ REG_TEST(test_container_types_v0_1_2) {
     // vector类型
     auto vec_desc = TypeDesc<std::vector<i32>>::v;
     ck_assert_uint_eq(vec_desc.size(), 2);
-    ck_assert_uint_eq(vec_desc[0], maliu::E::vector);
-    ck_assert_uint_eq(vec_desc[1], maliu::i32);
+    ck_assert_uint_eq(vec_desc[0], E_type::vector);
+    ck_assert_uint_eq(vec_desc[1], E_type::i32);
 
     // array类型
     auto arr_desc = TypeDesc<std::array<f64, 10>>::v;
     ck_assert_uint_eq(arr_desc.size(), 3);
-    ck_assert_uint_eq(arr_desc[0], maliu::E::array);
+    ck_assert_uint_eq(arr_desc[0], E_type::array);
     ck_assert_uint_eq(arr_desc[1], 10);
-    ck_assert_uint_eq(arr_desc[2], maliu::f64);
+    ck_assert_uint_eq(arr_desc[2], E_type::f64);
 
     // list类型
     auto list_desc = TypeDesc<std::list<std::string>>::v;
     ck_assert_uint_eq(list_desc.size(), 1+2);
-    ck_assert_uint_eq(list_desc[0], maliu::E::list);
-    ck_assert_uint_eq(list_desc[1], maliu::E::string);
-    ck_assert_uint_eq(list_desc[2], maliu::E::ch);
+    ck_assert_uint_eq(list_desc[0], E_type::list);
+    ck_assert_uint_eq(list_desc[1], E_type::string);
+    ck_assert_uint_eq(list_desc[2], E_type::ch);
     // 进一步验证字符串描述内部
     auto str_desc = TypeDesc<std::string>::v;
     ck_assert_uint_eq(str_desc.size(), 2);
-    ck_assert_uint_eq(str_desc[1], maliu::ch);
+    ck_assert_uint_eq(str_desc[1], E_type::ch);
 }
 
 // 测试智能指针类型令牌生成
@@ -168,20 +168,20 @@ REG_TEST(test_smart_pointer_types_v0_1_2) {
     // shared_ptr
     auto sptr_desc = TypeDesc<Sptr<u64>>::v;
     ck_assert_uint_eq(sptr_desc.size(), 2);
-    ck_assert_uint_eq(sptr_desc[0], maliu::E::sptr);
-    ck_assert_uint_eq(sptr_desc[1], maliu::u64);
+    ck_assert_uint_eq(sptr_desc[0], E_type::sptr);
+    ck_assert_uint_eq(sptr_desc[1], E_type::u64);
 
     // unique_ptr
     auto uptr_desc = TypeDesc<Uptr<f32>>::v;
     ck_assert_uint_eq(uptr_desc.size(), 2);
-    ck_assert_uint_eq(uptr_desc[0], maliu::E::uptr);
-    ck_assert_uint_eq(uptr_desc[1], maliu::f32);
+    ck_assert_uint_eq(uptr_desc[0], E_type::uptr);
+    ck_assert_uint_eq(uptr_desc[1], E_type::f32);
 
     // weak_ptr
     auto wptr_desc = TypeDesc<Wptr<bl>>::v;
     ck_assert_uint_eq(wptr_desc.size(), 2);
-    ck_assert_uint_eq(wptr_desc[0], maliu::E::wptr);
-    ck_assert_uint_eq(wptr_desc[1], maliu::bl);
+    ck_assert_uint_eq(wptr_desc[0], E_type::wptr);
+    ck_assert_uint_eq(wptr_desc[1], E_type::bl);
 }
 
 // 测试复杂嵌套类型令牌生成
@@ -189,24 +189,24 @@ REG_TEST(test_nested_types_v0_1_2) {
     // map嵌套vector
     auto map_desc = TypeDesc<std::map<i32, std::vector<f64>>>::v;
     ck_assert_uint_eq(map_desc.size(), 4);
-    ck_assert_uint_eq(map_desc[0], maliu::E::map);
-    ck_assert_uint_eq(map_desc[1], maliu::i32);
-    ck_assert_uint_eq(map_desc[2], maliu::E::vector);
-    ck_assert_uint_eq(map_desc[3], maliu::f64);
+    ck_assert_uint_eq(map_desc[0], E_type::map);
+    ck_assert_uint_eq(map_desc[1], E_type::i32);
+    ck_assert_uint_eq(map_desc[2], E_type::vector);
+    ck_assert_uint_eq(map_desc[3], E_type::f64);
 
     // vector嵌套map嵌套shared_ptr
     auto vec_desc = TypeDesc<std::vector<std::map<i32, Sptr<std::string>>>>::v;
     ck_assert_uint_eq(vec_desc.size(), 6);
-    ck_assert_uint_eq(vec_desc[0], maliu::E::vector);
-    ck_assert_uint_eq(vec_desc[1], maliu::E::map);
-    ck_assert_uint_eq(vec_desc[2], maliu::i32);
-    ck_assert_uint_eq(vec_desc[3], maliu::E::sptr);
-    ck_assert_uint_eq(vec_desc[4], maliu::E::string);
-    ck_assert_uint_eq(vec_desc[5], maliu::E::ch);
+    ck_assert_uint_eq(vec_desc[0], E_type::vector);
+    ck_assert_uint_eq(vec_desc[1], E_type::map);
+    ck_assert_uint_eq(vec_desc[2], E_type::i32);
+    ck_assert_uint_eq(vec_desc[3], E_type::sptr);
+    ck_assert_uint_eq(vec_desc[4], E_type::string);
+    ck_assert_uint_eq(vec_desc[5], E_type::ch);
     // 进一步验证内部类型描述
     auto str_desc = TypeDesc<std::string>::v;
     ck_assert_uint_eq(str_desc.size(), 2);
-    ck_assert_uint_eq(str_desc[1], maliu::ch);
+    ck_assert_uint_eq(str_desc[1], E_type::ch);
 }
 
 // 测试variant类型令牌生成
@@ -215,40 +215,40 @@ REG_TEST(test_variant_type_v0_1_2) {
 
     auto variant_desc = TypeDesc<TestVariant>::v;
     ck_assert_uint_eq(variant_desc.size(), 5+1);
-    ck_assert_uint_eq(variant_desc[0], maliu::E::variant);
-    ck_assert_uint_eq(variant_desc[1], maliu::i32);
-    ck_assert_uint_eq(variant_desc[2], maliu::f32);
-    ck_assert_uint_eq(variant_desc[3], maliu::E::string);
-    ck_assert_uint_eq(variant_desc[4], maliu::ch);
-    ck_assert_uint_eq(variant_desc[5], maliu::ed);
+    ck_assert_uint_eq(variant_desc[0], E_type::variant);
+    ck_assert_uint_eq(variant_desc[1], E_type::i32);
+    ck_assert_uint_eq(variant_desc[2], E_type::f32);
+    ck_assert_uint_eq(variant_desc[3], E_type::string);
+    ck_assert_uint_eq(variant_desc[4], E_type::ch);
+    ck_assert_uint_eq(variant_desc[5], E_type::ed);
 }
 
 // 测试atomic类型令牌生成
 REG_TEST(test_atomic_type_v0_1_2) {
     auto atomic_desc = TypeDesc<std::atomic<u64>>::v;
     ck_assert_uint_eq(atomic_desc.size(), 2);
-    ck_assert_uint_eq(atomic_desc[0], maliu::E::atomic);
-    ck_assert_uint_eq(atomic_desc[1], maliu::u64);
+    ck_assert_uint_eq(atomic_desc[0], E_type::atomic);
+    ck_assert_uint_eq(atomic_desc[1], E_type::u64);
 }
 
 // 测试optional类型令牌生成
 REG_TEST(test_optional_type_v0_1_2) {
     auto opt_desc = TypeDesc<std::optional<std::string>>::v;
     ck_assert_uint_eq(opt_desc.size(), 3);
-    ck_assert_uint_eq(opt_desc[0], maliu::E::opt);
-    ck_assert_uint_eq(opt_desc[1], maliu::E::string);
-    ck_assert_uint_eq(opt_desc[2], maliu::E::ch);
+    ck_assert_uint_eq(opt_desc[0], E_type::opt);
+    ck_assert_uint_eq(opt_desc[1], E_type::string);
+    ck_assert_uint_eq(opt_desc[2], E_type::ch);
     // 进一步验证内部类型描述
     auto str_desc = TypeDesc<std::string>::v;
     ck_assert_uint_eq(str_desc.size(), 2);
-    ck_assert_uint_eq(str_desc[1], maliu::ch);
+    ck_assert_uint_eq(str_desc[1], E_type::ch);
 }
 
 // 测试路径类型令牌生成
 REG_TEST(test_path_type_v0_1_2) {
     auto path_desc = TypeDesc<std::filesystem::path>::v;
     ck_assert_uint_eq(path_desc.size(), 1);
-    ck_assert_uint_eq(path_desc[0], maliu::E::path);
+    ck_assert_uint_eq(path_desc[0], E_type::path);
 }
 
 
@@ -259,8 +259,8 @@ REG_TEST(test_tuple_empty_v0_1_2) {
 
     // 结构: [tuple开始标识, ed结束符]
     ck_assert_uint_eq(desc.size(), 2);
-    ck_assert_uint_eq(desc[0], maliu::E::tuple);
-    ck_assert_uint_eq(desc[1], maliu::E::ed);
+    ck_assert_uint_eq(desc[0], E_type::tuple);
+    ck_assert_uint_eq(desc[1], E_type::ed);
 }
 
 // 测试单元素元组类型
@@ -270,9 +270,9 @@ REG_TEST(test_tuple_single_element_v0_1_2) {
 
     // 结构: [tuple标识, int类型标识, ed结束符]
     ck_assert_uint_eq(desc.size(), 3);
-    ck_assert_uint_eq(desc[0], maliu::E::tuple);
-    ck_assert_uint_eq(desc[1], maliu::i32);
-    ck_assert_uint_eq(desc[2], maliu::E::ed);
+    ck_assert_uint_eq(desc[0], E_type::tuple);
+    ck_assert_uint_eq(desc[1], E_type::i32);
+    ck_assert_uint_eq(desc[2], E_type::ed);
 }
 
 // 测试多元素元组类型
@@ -282,11 +282,11 @@ REG_TEST(test_tuple_multiple_elements_v0_1_2) {
 
     // 结构: [tuple标识, char, float, bool, ed结束符]
     ck_assert_uint_eq(desc.size(), 5);
-    ck_assert_uint_eq(desc[0], maliu::E::tuple);
-    ck_assert_uint_eq(desc[1], maliu::ch);
-    ck_assert_uint_eq(desc[2], maliu::f32);
-    ck_assert_uint_eq(desc[3], maliu::bl);
-    ck_assert_uint_eq(desc[4], maliu::E::ed);
+    ck_assert_uint_eq(desc[0], E_type::tuple);
+    ck_assert_uint_eq(desc[1], E_type::ch);
+    ck_assert_uint_eq(desc[2], E_type::f32);
+    ck_assert_uint_eq(desc[3], E_type::bl);
+    ck_assert_uint_eq(desc[4], E_type::ed);
 }
 
 // 测试嵌套元组类型
@@ -296,12 +296,12 @@ REG_TEST(test_tuple_nested_v0_1_2) {
 
     // 结构: [tuple开始, [tuple开始, int, ed], double, ed结束符]
     ck_assert_uint_eq(desc.size(), 6);
-    ck_assert_uint_eq(desc[0], maliu::E::tuple); // 外层tuple开始
-    ck_assert_uint_eq(desc[1], maliu::E::tuple); // 内层tuple开始
-    ck_assert_uint_eq(desc[2], maliu::i32);    // int类型
-    ck_assert_uint_eq(desc[3], maliu::E::ed);   // 内层tuple结束
-    ck_assert_uint_eq(desc[4], maliu::f64);    // double类型
-    ck_assert_uint_eq(desc[5], maliu::E::ed);   // 外层tuple结束
+    ck_assert_uint_eq(desc[0], E_type::tuple); // 外层tuple开始
+    ck_assert_uint_eq(desc[1], E_type::tuple); // 内层tuple开始
+    ck_assert_uint_eq(desc[2], E_type::i32);    // int类型
+    ck_assert_uint_eq(desc[3], E_type::ed);   // 内层tuple结束
+    ck_assert_uint_eq(desc[4], E_type::f64);    // double类型
+    ck_assert_uint_eq(desc[5], E_type::ed);   // 外层tuple结束
 }
 
 // 测试混合容器元组类型
@@ -317,27 +317,27 @@ REG_TEST(test_tuple_mixed_containers_v0_1_2) {
     ck_assert_uint_gt(desc.size(), 4); // 确保有足够元素
 
     // 外层元组开始
-    ck_assert_uint_eq(desc[0], maliu::E::tuple);
+    ck_assert_uint_eq(desc[0], E_type::tuple);
 
     // 验证vector<int>
     size_t pos = 1;
-    ck_assert_uint_eq(desc[pos++], maliu::E::vector); // vector开始
-    ck_assert_uint_eq(desc[pos++], maliu::i32);       // int类型
+    ck_assert_uint_eq(desc[pos++], E_type::vector); // vector开始
+    ck_assert_uint_eq(desc[pos++], E_type::i32);       // int类型
 
     // 验证map<string, int>
-    ck_assert_uint_eq(desc[pos++], maliu::E::map);    // map开始
+    ck_assert_uint_eq(desc[pos++], E_type::map);    // map开始
     // string描述（2个元素）
-    ck_assert_uint_eq(desc[pos++], maliu::E::string); // string开始
-    ck_assert_uint_eq(desc[pos++], maliu::ch);         // char类型
+    ck_assert_uint_eq(desc[pos++], E_type::string); // string开始
+    ck_assert_uint_eq(desc[pos++], E_type::ch);         // char类型
     // int类型
-    ck_assert_uint_eq(desc[pos++], maliu::i32);
+    ck_assert_uint_eq(desc[pos++], E_type::i32);
 
     // 验证unique_ptr<float>
-    ck_assert_uint_eq(desc[pos++], maliu::E::uptr);   // unique_ptr开始
-    ck_assert_uint_eq(desc[pos++], maliu::f32);        // float类型
+    ck_assert_uint_eq(desc[pos++], E_type::uptr);   // unique_ptr开始
+    ck_assert_uint_eq(desc[pos++], E_type::f32);        // float类型
 
     // 外层元组结束
-    ck_assert_uint_eq(desc.back(), maliu::E::ed);
+    ck_assert_uint_eq(desc.back(), E_type::ed);
 }
 
 // 测试大元组类型（边界情况）
@@ -349,20 +349,20 @@ REG_TEST(test_tuple_large_v0_1_2) {
 
     // 基本结构检查
     ck_assert_uint_eq(desc.size(), 11); // 1(开始) + 9(类型) + 1(结束)
-    ck_assert_uint_eq(desc[0], maliu::E::tuple);
-    ck_assert_uint_eq(desc.back(), maliu::E::ed);
+    ck_assert_uint_eq(desc[0], E_type::tuple);
+    ck_assert_uint_eq(desc.back(), E_type::ed);
 
     // 序列验证
-    ck_assert_uint_eq(desc[1], maliu::i32);
-    ck_assert_uint_eq(desc[2], maliu::ch );
-    ck_assert_uint_eq(desc[3], maliu::f32);
-    ck_assert_uint_eq(desc[4], maliu::f64);
-    ck_assert_uint_eq(desc[5], maliu::bl );
-    ck_assert_uint_eq(desc[6], maliu::i16);
-    ck_assert_uint_eq(desc[7], maliu::i32);
-    ck_assert_uint_eq(desc[8], maliu::u32);
-    ck_assert_uint_eq(desc[9], maliu::u64);
-    ck_assert_uint_eq(desc[10], maliu::ed );
+    ck_assert_uint_eq(desc[1], E_type::i32);
+    ck_assert_uint_eq(desc[2], E_type::ch );
+    ck_assert_uint_eq(desc[3], E_type::f32);
+    ck_assert_uint_eq(desc[4], E_type::f64);
+    ck_assert_uint_eq(desc[5], E_type::bl );
+    ck_assert_uint_eq(desc[6], E_type::i16);
+    ck_assert_uint_eq(desc[7], E_type::i32);
+    ck_assert_uint_eq(desc[8], E_type::u32);
+    ck_assert_uint_eq(desc[9], E_type::u64);
+    ck_assert_uint_eq(desc[10], E_type::ed );
 }
 
 
@@ -371,7 +371,7 @@ REG_TEST(test_pointer_basic_types_v0_1_2) {
     // int指针
     constexpr auto int_ptr_desc = TypeDesc<int*>::v;
     constexpr MaliuTokenArr<2> expected_int_desc = {
-        maliu::E::ptr,
+        E_type::ptr,
         TypeDesc<int>::v[0]  // 基础int类型描述
     };
     static_assert(int_ptr_desc == expected_int_desc);
@@ -379,7 +379,7 @@ REG_TEST(test_pointer_basic_types_v0_1_2) {
     // double指针
     constexpr auto double_ptr_desc = TypeDesc<double*>::v;
     constexpr MaliuTokenArr<2> expected_double_desc = {
-        maliu::E::ptr,
+        E_type::ptr,
         TypeDesc<double>::v[0]  // 基础double类型描述
     };
     static_assert(double_ptr_desc == expected_double_desc);
@@ -387,7 +387,7 @@ REG_TEST(test_pointer_basic_types_v0_1_2) {
     // bool指针
     constexpr auto bool_ptr_desc = TypeDesc<bool*>::v;
     constexpr MaliuTokenArr<2> expected_bool_desc = {
-        maliu::E::ptr,
+        E_type::ptr,
         TypeDesc<bool>::v[0]  // 基础bool类型描述
     };
     static_assert(bool_ptr_desc == expected_bool_desc);
@@ -398,8 +398,8 @@ REG_TEST(test_pointer_multilevel_v0_1_2) {
     // 双重指针
     constexpr auto double_int_ptr_desc = TypeDesc<int**>::v;
     constexpr MaliuTokenArr<3> expected_double_int_desc = {
-        maliu::E::ptr,
-        maliu::E::ptr,
+        E_type::ptr,
+        E_type::ptr,
         TypeDesc<int>::v[0]
     };
     static_assert(double_int_ptr_desc == expected_double_int_desc);
@@ -407,9 +407,9 @@ REG_TEST(test_pointer_multilevel_v0_1_2) {
     // 三重指针
     constexpr auto triple_double_ptr_desc = TypeDesc<double***>::v;
     constexpr MaliuTokenArr<4> expected_triple_double_desc = {
-        maliu::E::ptr,
-        maliu::E::ptr,
-        maliu::E::ptr,
+        E_type::ptr,
+        E_type::ptr,
+        E_type::ptr,
         TypeDesc<double>::v[0]
     };
     static_assert(triple_double_ptr_desc == expected_triple_double_desc);
@@ -420,15 +420,15 @@ REG_TEST(test_pointer_special_types_v0_1_2) {
     // void指针
     constexpr auto void_ptr_desc = TypeDesc<void*>::v;
     constexpr MaliuTokenArr<1> expected_void_desc = {
-        maliu::E::voidPtr,
+        E_type::voidPtr,
     };
     static_assert(void_ptr_desc == expected_void_desc);
 
     // const指针
     constexpr auto const_int_ptr_desc = TypeDesc<const int*>::v;
     constexpr MaliuTokenArr<3> expected_const_int_desc = {
-        maliu::E::ptr,
-        maliu::E::cst,
+        E_type::ptr,
+        E_type::cst,
         TypeDesc<int>::v[0]  // const性由序列化处理
     };
     static_assert(const_int_ptr_desc == expected_const_int_desc);
@@ -452,7 +452,7 @@ REG_TEST(unit_test_TypesToken_v0_1_2) {
     const auto* ptr = &TypeDesc<void*>::v; // 获取地址
     std::cout << "Memory address: " << ptr << '\n';
 
-    auto x = MultiLevelContainer::desc;
+    auto x = MultiLevelContainer::_desc;
     int a = 1;
 }
 
@@ -463,19 +463,19 @@ REG_TEST(unit_test_TypesToken_v0_1_2) {
 // 测试基本类型的类型描述符
 REG_TEST(test_basic_types_desc) {
     // 整数类型
-    static_assert(TypeDesc<u8>::v[0] == maliu::u8);
-    static_assert(TypeDesc<i32>::v[0] == maliu::i32);
+    static_assert(TypeDesc<u8>::v[0] == E_type::u8);
+    static_assert(TypeDesc<i32>::v[0] == E_type::i32);
 
     // 浮点类型
-    static_assert(TypeDesc<f32>::v[0] == maliu::f32);
-    static_assert(TypeDesc<f64>::v[0] == maliu::f64);
+    static_assert(TypeDesc<f32>::v[0] == E_type::f32);
+    static_assert(TypeDesc<f64>::v[0] == E_type::f64);
 
     // 字符类型
-    static_assert(TypeDesc<char8_t>::v[0] == maliu::ch8);
-    static_assert(TypeDesc<char32_t>::v[0] == maliu::ch32);
+    static_assert(TypeDesc<char8_t>::v[0] == E_type::ch8);
+    static_assert(TypeDesc<char32_t>::v[0] == E_type::ch32);
 
     // 布尔类型
-    static_assert(TypeDesc<bool>::v[0] == maliu::bl);
+    static_assert(TypeDesc<bool>::v[0] == E_type::bl);
 }
 
 // 测试容器类型的类型描述符
@@ -483,23 +483,23 @@ REG_TEST(test_container_types_desc) {
     // vector描述符 (vector + 元素类型)
     constexpr auto vecDesc = TypeDesc<std::vector<int>>::v;
     ck_assert_uint_eq(vecDesc.size(), 2);
-    ck_assert_uint_eq(vecDesc[0], maliu::vector);
-    ck_assert_uint_eq(vecDesc[1], maliu::i32);
+    ck_assert_uint_eq(vecDesc[0], E_type::vector);
+    ck_assert_uint_eq(vecDesc[1], E_type::i32);
 
     // array描述符 (array + 大小 + 元素类型)
     constexpr auto arrDesc = TypeDesc<std::array<float, 10>>::v;
     ck_assert_uint_eq(arrDesc.size(), 3);
-    ck_assert_uint_eq(arrDesc[0], maliu::array);
+    ck_assert_uint_eq(arrDesc[0], E_type::array);
     ck_assert_uint_eq(arrDesc[1], 10); // size
-    ck_assert_uint_eq(arrDesc[2], maliu::f32); // 元素类型
+    ck_assert_uint_eq(arrDesc[2], E_type::f32); // 元素类型
 
     // map描述符 (map + key类型 + value类型)
     constexpr auto mapDesc = TypeDesc<std::map<std::string, int>>::v;
     ck_assert_uint_eq(mapDesc.size(), 4); // map + (string + char) + i32
-    ck_assert_uint_eq(mapDesc[0], maliu::map);
-    ck_assert_uint_eq(mapDesc[1], maliu::string);
-    ck_assert_uint_eq(mapDesc[2], maliu::ch); // string的char类型
-    ck_assert_uint_eq(mapDesc[3], maliu::i32);
+    ck_assert_uint_eq(mapDesc[0], E_type::map);
+    ck_assert_uint_eq(mapDesc[1], E_type::string);
+    ck_assert_uint_eq(mapDesc[2], E_type::ch); // string的char类型
+    ck_assert_uint_eq(mapDesc[3], E_type::i32);
 }
 
 // 测试智能指针的类型描述符
@@ -507,15 +507,15 @@ REG_TEST(test_smart_pointers_desc) {
     // shared_ptr描述符
     constexpr auto sptrDesc = TypeDesc<Sptr<int>>::v;
     ck_assert_uint_eq(sptrDesc.size(), 2);
-    ck_assert_uint_eq(sptrDesc[0], maliu::sptr);
-    ck_assert_uint_eq(sptrDesc[1], maliu::i32);
+    ck_assert_uint_eq(sptrDesc[0], E_type::sptr);
+    ck_assert_uint_eq(sptrDesc[1], E_type::i32);
 
     // unique_ptr描述符
     constexpr auto uptrDesc = TypeDesc<Uptr<std::string>>::v;
     ck_assert_uint_eq(uptrDesc.size(), 3); // uptr + string + char
-    ck_assert_uint_eq(uptrDesc[0], maliu::uptr);
-    ck_assert_uint_eq(uptrDesc[1], maliu::string);
-    ck_assert_uint_eq(uptrDesc[2], maliu::ch);
+    ck_assert_uint_eq(uptrDesc[0], E_type::uptr);
+    ck_assert_uint_eq(uptrDesc[1], E_type::string);
+    ck_assert_uint_eq(uptrDesc[2], E_type::ch);
 }
 
 // 测试时间类型的类型描述符
@@ -525,12 +525,12 @@ REG_TEST(test_time_types_desc) {
     // duration描述符
     constexpr auto durDesc = TypeDesc<milliseconds>::v;
     ck_assert_uint_eq(durDesc.size(), 1);
-    ck_assert_uint_eq(durDesc[0], maliu::dur);
+    ck_assert_uint_eq(durDesc[0], E_type::dur);
 
     // time_point描述符
     constexpr auto tpDesc = TypeDesc<system_clock::time_point>::v;
     ck_assert_uint_eq(tpDesc.size(), 1);
-    ck_assert_uint_eq(tpDesc[0], maliu::timepoint);
+    ck_assert_uint_eq(tpDesc[0], E_type::timepoint);
 }
 
 // 测试复杂嵌套类型的类型描述符
@@ -538,21 +538,21 @@ REG_TEST(test_nested_types_desc) {
     // 嵌套容器 vector<set<int>>
     constexpr auto nestedDesc = TypeDesc<std::vector<std::set<int>>>::v;
     ck_assert_uint_eq(nestedDesc.size(), 3);
-    ck_assert_uint_eq(nestedDesc[0], maliu::vector); // 最外层
-    ck_assert_uint_eq(nestedDesc[1], maliu::set);    // 内层容器
-    ck_assert_uint_eq(nestedDesc[2], maliu::i32);    // 元素类型
+    ck_assert_uint_eq(nestedDesc[0], E_type::vector); // 最外层
+    ck_assert_uint_eq(nestedDesc[1], E_type::set);    // 内层容器
+    ck_assert_uint_eq(nestedDesc[2], E_type::i32);    // 元素类型
 }
 
 // 测试变体类型(variant)的描述符
 REG_TEST(test_variant_desc) {
     constexpr auto varDesc = TypeDesc<std::variant<int, std::string, float>>::v;
     ck_assert_uint_eq(varDesc.size(), 6); // variant + [i32, string, ch, f32] + ed
-    ck_assert_uint_eq(varDesc[0], maliu::variant);
-    ck_assert_uint_eq(varDesc[1], maliu::i32);
-    ck_assert_uint_eq(varDesc[2], maliu::string);
-    ck_assert_uint_eq(varDesc[3], maliu::ch);
-    ck_assert_uint_eq(varDesc[4], maliu::f32);
-    ck_assert_uint_eq(varDesc[5], maliu::ed); // ed表示变体结束
+    ck_assert_uint_eq(varDesc[0], E_type::variant);
+    ck_assert_uint_eq(varDesc[1], E_type::i32);
+    ck_assert_uint_eq(varDesc[2], E_type::string);
+    ck_assert_uint_eq(varDesc[3], E_type::ch);
+    ck_assert_uint_eq(varDesc[4], E_type::f32);
+    ck_assert_uint_eq(varDesc[5], E_type::ed); // ed表示变体结束
 }
 
 // 测试自定义类型的描述符
@@ -560,7 +560,7 @@ REG_TEST(test_custom_types_desc) {
     // 测试自定义类型Test的描述符
     constexpr auto testDesc = TypeDesc<Test>::v;
     ck_assert_uint_eq(testDesc.size(), 1);
-    ck_assert_uint_eq(testDesc[0], maliu::Test);
+    ck_assert_uint_eq(testDesc[0], E_type::Test);
 }
 
 // 测试指针类型的描述符
@@ -568,21 +568,21 @@ REG_TEST(test_pointer_desc) {
     // 原始指针
     constexpr auto rawDesc = TypeDesc<int*>::v;
     ck_assert_uint_eq(rawDesc.size(), 2);
-    ck_assert_uint_eq(rawDesc[0], maliu::ptr);
-    ck_assert_uint_eq(rawDesc[1], maliu::i32);
+    ck_assert_uint_eq(rawDesc[0], E_type::ptr);
+    ck_assert_uint_eq(rawDesc[1], E_type::i32);
 
     // void指针
     constexpr auto voidDesc = TypeDesc<void*>::v;
     ck_assert_uint_eq(voidDesc.size(), 1);
-    ck_assert_uint_eq(voidDesc[0], maliu::voidPtr);
+    ck_assert_uint_eq(voidDesc[0], E_type::voidPtr);
 }
 
 // 测试常量类型的描述符
 REG_TEST(test_const_desc) {
     constexpr auto constDesc = TypeDesc<const int>::v;
     ck_assert_uint_eq(constDesc.size(), 2);
-    ck_assert_uint_eq(constDesc[0], maliu::cst);
-    ck_assert_uint_eq(constDesc[1], maliu::i32);
+    ck_assert_uint_eq(constDesc[0], E_type::cst);
+    ck_assert_uint_eq(constDesc[1], E_type::i32);
 }
 
 // 测试机器信息结构的序列化
@@ -617,12 +617,12 @@ REG_TEST(test_custom_class_desc_basic) {
     // Test 类 (直接继承自 Base)
     constexpr auto testDesc = TypeDesc<Test>::v;
     ck_assert_uint_eq(testDesc.size(), 1);
-    ck_assert_uint_eq(testDesc[0], maliu::Test);
+    ck_assert_uint_eq(testDesc[0], E_type::Test);
 
     // MQTT 类
     constexpr auto mqttDesc = TypeDesc<MQTT>::v;
     ck_assert_uint_eq(mqttDesc.size(), 1);
-    ck_assert_uint_eq(mqttDesc[0], maliu::MQTT);
+    ck_assert_uint_eq(mqttDesc[0], E_type::MQTT);
 }
 
 // 测试带继承的自定义类的类型描述符
@@ -630,50 +630,50 @@ REG_TEST(test_custom_class_desc_inheritance) {
     // Device 基类
     constexpr auto deviceDesc = TypeDesc<Device>::v;
     ck_assert_uint_eq(deviceDesc.size(), 1);
-    ck_assert_uint_eq(deviceDesc[0], maliu::Device);
+    ck_assert_uint_eq(deviceDesc[0], E_type::Device);
 
     // NetworkDevice (继承自 Device)
-    constexpr auto netDeviceDesc = NetworkDevice::desc;
-    ck_assert_uint_eq(netDeviceDesc[0], maliu::Device);
-    ck_assert_uint_eq(netDeviceDesc[1], maliu::string);
-    ck_assert_uint_eq(netDeviceDesc[2], maliu::ch);
-    ck_assert_uint_eq(netDeviceDesc[3], maliu::string);
-    ck_assert_uint_eq(netDeviceDesc[4], maliu::ch);
-    ck_assert_uint_eq(netDeviceDesc[5], maliu::u16);
+    constexpr auto netDeviceDesc = NetworkDevice::_desc;
+    ck_assert_uint_eq(netDeviceDesc[0], E_type::Device);
+    ck_assert_uint_eq(netDeviceDesc[1], E_type::string);
+    ck_assert_uint_eq(netDeviceDesc[2], E_type::ch);
+    ck_assert_uint_eq(netDeviceDesc[3], E_type::string);
+    ck_assert_uint_eq(netDeviceDesc[4], E_type::ch);
+    ck_assert_uint_eq(netDeviceDesc[5], E_type::u16);
 
     // 多层继承的 TemperatureSensor
-    constexpr auto tempSensorDesc = TemperatureSensor::desc;
+    constexpr auto tempSensorDesc = TemperatureSensor::_desc;
     ck_assert_uint_eq(tempSensorDesc.size(), 3);
-    ck_assert_uint_eq(tempSensorDesc[0], maliu::Sensor);
-    ck_assert_uint_eq(tempSensorDesc[1], maliu::bl);
-    ck_assert_uint_eq(tempSensorDesc[2], maliu::f64);
+    ck_assert_uint_eq(tempSensorDesc[0], E_type::Sensor);
+    ck_assert_uint_eq(tempSensorDesc[1], E_type::bl);
+    ck_assert_uint_eq(tempSensorDesc[2], E_type::f64);
 }
 
 // 测试包含智能指针的自定义类描述符
 REG_TEST(test_custom_class_desc_smart_pointers) {
     // PointerDemo 类 (含各种指针类型)
-    constexpr auto ptrDemoDesc = PointerDemo::desc;
+    constexpr auto ptrDemoDesc = PointerDemo::_desc;
     ck_assert_uint_eq(ptrDemoDesc.size(), 9); // [base, pointer_demo]
-    ck_assert_uint_eq(ptrDemoDesc[0], maliu::base);
-    ck_assert_uint_eq(ptrDemoDesc[1], maliu::ptr);
-    ck_assert_uint_eq(ptrDemoDesc[2], maliu::Test);
-    ck_assert_uint_eq(ptrDemoDesc[3], maliu::sptr);
-    ck_assert_uint_eq(ptrDemoDesc[4], maliu::MQTT);
-    ck_assert_uint_eq(ptrDemoDesc[5], maliu::uptr);
-    ck_assert_uint_eq(ptrDemoDesc[6], maliu::Test);
-    ck_assert_uint_eq(ptrDemoDesc[7], maliu::wptr);
-    ck_assert_uint_eq(ptrDemoDesc[8], maliu::PointerDemo);
+    ck_assert_uint_eq(ptrDemoDesc[0], E_type::Base);
+    ck_assert_uint_eq(ptrDemoDesc[1], E_type::ptr);
+    ck_assert_uint_eq(ptrDemoDesc[2], E_type::Test);
+    ck_assert_uint_eq(ptrDemoDesc[3], E_type::sptr);
+    ck_assert_uint_eq(ptrDemoDesc[4], E_type::MQTT);
+    ck_assert_uint_eq(ptrDemoDesc[5], E_type::uptr);
+    ck_assert_uint_eq(ptrDemoDesc[6], E_type::Test);
+    ck_assert_uint_eq(ptrDemoDesc[7], E_type::wptr);
+    ck_assert_uint_eq(ptrDemoDesc[8], E_type::PointerDemo);
 
     // 验证智能指针描述符
     constexpr auto rawPtrDesc = TypeDesc<decltype(PointerDemo::rawPtr)>::v;
     ck_assert_uint_eq(rawPtrDesc.size(), 2); // ptr + Test
-    ck_assert_uint_eq(rawPtrDesc[0], maliu::ptr);
-    ck_assert_uint_eq(rawPtrDesc[1], maliu::Test);
+    ck_assert_uint_eq(rawPtrDesc[0], E_type::ptr);
+    ck_assert_uint_eq(rawPtrDesc[1], E_type::Test);
 
     constexpr auto sharedPtrDesc = TypeDesc<decltype(PointerDemo::sharedPtr)>::v;
     ck_assert_uint_eq(sharedPtrDesc.size(), 2); // sptr + MQTT
-    ck_assert_uint_eq(sharedPtrDesc[0], maliu::sptr);
-    ck_assert_uint_eq(sharedPtrDesc[1], maliu::MQTT);
+    ck_assert_uint_eq(sharedPtrDesc[0], E_type::sptr);
+    ck_assert_uint_eq(sharedPtrDesc[1], E_type::MQTT);
 }
 
 // 测试嵌套容器的自定义类描述符
@@ -681,23 +681,23 @@ REG_TEST(test_custom_class_desc_nested_containers) {
     // ContainerDemo 类
     constexpr auto containerDesc = TypeDesc<ContainerDemo>::v;
     ck_assert_uint_eq(containerDesc.size(), 1);
-    ck_assert_uint_eq(containerDesc[0], maliu::ContainerDemo);
+    ck_assert_uint_eq(containerDesc[0], E_type::ContainerDemo);
 
     // 验证容器成员描述符
     constexpr auto vecPtrDesc = TypeDesc<decltype(ContainerDemo::testPtrs)>::v;
     ck_assert_uint_eq(vecPtrDesc.size(), 3); // vector + sptr + Test
-    ck_assert_uint_eq(vecPtrDesc[0], maliu::vector);
-    ck_assert_uint_eq(vecPtrDesc[1], maliu::sptr);
-    ck_assert_uint_eq(vecPtrDesc[2], maliu::Test);
+    ck_assert_uint_eq(vecPtrDesc[0], E_type::vector);
+    ck_assert_uint_eq(vecPtrDesc[1], E_type::sptr);
+    ck_assert_uint_eq(vecPtrDesc[2], E_type::Test);
 
     // 验证嵌套 map 的描述符
     constexpr auto mapDesc = TypeDesc<decltype(ContainerDemo::mqttConfigs)>::v;
     ck_assert_uint_eq(mapDesc.size(), 5); // [map, string, char, umap, string, MQTT]
-    ck_assert_uint_eq(mapDesc[0], maliu::map);
-    ck_assert_uint_eq(mapDesc[1], maliu::string);
-    ck_assert_uint_eq(mapDesc[2], maliu::ch);
-    ck_assert_uint_eq(mapDesc[3], maliu::uptr);
-    ck_assert_uint_eq(mapDesc[4], maliu::MQTT);
+    ck_assert_uint_eq(mapDesc[0], E_type::map);
+    ck_assert_uint_eq(mapDesc[1], E_type::string);
+    ck_assert_uint_eq(mapDesc[2], E_type::ch);
+    ck_assert_uint_eq(mapDesc[3], E_type::uptr);
+    ck_assert_uint_eq(mapDesc[4], E_type::MQTT);
 }
 
 // 测试复杂系统类的类型描述符
@@ -705,29 +705,29 @@ REG_TEST(test_custom_class_desc_complex_systems) {
     // NetworkSystem 类
     constexpr auto networkDesc = TypeDesc<NetworkSystem>::v;
     ck_assert_uint_eq(networkDesc.size(), 1);
-    ck_assert_uint_eq(networkDesc[0], maliu::NetworkSystem);
+    ck_assert_uint_eq(networkDesc[0], E_type::NetworkSystem);
 
     // SmartHomeSystem 类
-    constexpr auto smartHomeDesc = SmartHomeSystem::desc;
+    constexpr auto smartHomeDesc = SmartHomeSystem::_desc;
     ck_assert_uint_eq(smartHomeDesc.size(), 13);
-    ck_assert_uint_eq(smartHomeDesc[0], maliu::base);
-    ck_assert_uint_eq(smartHomeDesc[1], maliu::vector);
-    ck_assert_uint_eq(smartHomeDesc[2], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[3], maliu::Device);
-    ck_assert_uint_eq(smartHomeDesc[4], maliu::map);
-    ck_assert_uint_eq(smartHomeDesc[5], maliu::string);
-    ck_assert_uint_eq(smartHomeDesc[6], maliu::ch);
-    ck_assert_uint_eq(smartHomeDesc[7], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[8], maliu::Sensor);
-    ck_assert_uint_eq(smartHomeDesc[9], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[10], maliu::TemperatureSensor);
-    ck_assert_uint_eq(smartHomeDesc[11], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[12], maliu::NetworkSystem);
+    ck_assert_uint_eq(smartHomeDesc[0], E_type::Base);
+    ck_assert_uint_eq(smartHomeDesc[1], E_type::vector);
+    ck_assert_uint_eq(smartHomeDesc[2], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[3], E_type::Device);
+    ck_assert_uint_eq(smartHomeDesc[4], E_type::map);
+    ck_assert_uint_eq(smartHomeDesc[5], E_type::string);
+    ck_assert_uint_eq(smartHomeDesc[6], E_type::ch);
+    ck_assert_uint_eq(smartHomeDesc[7], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[8], E_type::Sensor);
+    ck_assert_uint_eq(smartHomeDesc[9], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[10], E_type::TemperatureSensor);
+    ck_assert_uint_eq(smartHomeDesc[11], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[12], E_type::NetworkSystem);
 
     // 验证时间类型成员描述符
     constexpr auto timeDesc = TypeDesc<decltype(Device::lastSeen)>::v;
     ck_assert_uint_eq(timeDesc.size(), 1);
-    ck_assert_uint_eq(timeDesc[0], maliu::timepoint);
+    ck_assert_uint_eq(timeDesc[0], E_type::timepoint);
 }
 
 // 测试多态和自引用类型的描述符
@@ -735,19 +735,19 @@ REG_TEST(test_custom_class_desc_polymorphic) {
     // 多态容器类
     constexpr auto mlcDesc = TypeDesc<MultiLevelContainer>::v;
     ck_assert_uint_eq(mlcDesc.size(), 1); // [base, multi_level_container]
-    ck_assert_uint_eq(mlcDesc[0], maliu::MultiLevelContainer);
+    ck_assert_uint_eq(mlcDesc[0], E_type::MultiLevelContainer);
 
     // 验证基础对象指针描述符
     constexpr auto basePtrDesc = TypeDesc<decltype(MultiLevelContainer::baseObj)>::v;
     ck_assert_uint_eq(basePtrDesc.size(), 2); // sptr + base
-    ck_assert_uint_eq(basePtrDesc[0], maliu::sptr);
-    ck_assert_uint_eq(basePtrDesc[1], maliu::base);
+    ck_assert_uint_eq(basePtrDesc[0], E_type::sptr);
+    ck_assert_uint_eq(basePtrDesc[1], E_type::Base);
 
     // 验证自引用描述符
     constexpr auto selfRefDesc = TypeDesc<decltype(MultiLevelContainer::selfRef)>::v;
     ck_assert_uint_eq(selfRefDesc.size(), 2); // [sptr, base, multi_level_container]
-    ck_assert_uint_eq(selfRefDesc[0], maliu::sptr);
-    ck_assert_uint_eq(selfRefDesc[1], maliu::MultiLevelContainer);
+    ck_assert_uint_eq(selfRefDesc[0], E_type::sptr);
+    ck_assert_uint_eq(selfRefDesc[1], E_type::MultiLevelContainer);
 }
 
 // 测试类型描述符的实际使用场景
@@ -768,46 +768,46 @@ REG_TEST(test_custom_class_desc_usage) {
 
     // 验证基本描述符结构
     ck_assert_uint_eq(testDesc.size(), 15);
-    ck_assert_uint_eq(testDesc[0], maliu::base);
-    ck_assert_uint_eq(testDesc[1], maliu::string);
-    ck_assert_uint_eq(testDesc[2], maliu::ch);
-    ck_assert_uint_eq(testDesc[3], maliu::string);
-    ck_assert_uint_eq(testDesc[4], maliu::ch);
-    ck_assert_uint_eq(testDesc[5], maliu::string);
-    ck_assert_uint_eq(testDesc[6], maliu::ch);
-    ck_assert_uint_eq(testDesc[7], maliu::string);
-    ck_assert_uint_eq(testDesc[8], maliu::ch);
-    ck_assert_uint_eq(testDesc[9], maliu::string);
-    ck_assert_uint_eq(testDesc[10], maliu::ch);
-    ck_assert_uint_eq(testDesc[11], maliu::string);
-    ck_assert_uint_eq(testDesc[12], maliu::ch);
-    ck_assert_uint_eq(testDesc[13], maliu::string);
-    ck_assert_uint_eq(testDesc[14], maliu::ch);
+    ck_assert_uint_eq(testDesc[0], E_type::Base);
+    ck_assert_uint_eq(testDesc[1], E_type::string);
+    ck_assert_uint_eq(testDesc[2], E_type::ch);
+    ck_assert_uint_eq(testDesc[3], E_type::string);
+    ck_assert_uint_eq(testDesc[4], E_type::ch);
+    ck_assert_uint_eq(testDesc[5], E_type::string);
+    ck_assert_uint_eq(testDesc[6], E_type::ch);
+    ck_assert_uint_eq(testDesc[7], E_type::string);
+    ck_assert_uint_eq(testDesc[8], E_type::ch);
+    ck_assert_uint_eq(testDesc[9], E_type::string);
+    ck_assert_uint_eq(testDesc[10], E_type::ch);
+    ck_assert_uint_eq(testDesc[11], E_type::string);
+    ck_assert_uint_eq(testDesc[12], E_type::ch);
+    ck_assert_uint_eq(testDesc[13], E_type::string);
+    ck_assert_uint_eq(testDesc[14], E_type::ch);
 
     // 验证继承类描述符
     ck_assert_uint_eq(netDeviceDesc.size(), 6);
-    ck_assert_uint_eq(netDeviceDesc[0], maliu::Device);
-    ck_assert_uint_eq(netDeviceDesc[1], maliu::string);
-    ck_assert_uint_eq(netDeviceDesc[2], maliu::ch);
-    ck_assert_uint_eq(netDeviceDesc[3], maliu::string);
-    ck_assert_uint_eq(netDeviceDesc[4], maliu::ch);
-    ck_assert_uint_eq(netDeviceDesc[5], maliu::u16);
+    ck_assert_uint_eq(netDeviceDesc[0], E_type::Device);
+    ck_assert_uint_eq(netDeviceDesc[1], E_type::string);
+    ck_assert_uint_eq(netDeviceDesc[2], E_type::ch);
+    ck_assert_uint_eq(netDeviceDesc[3], E_type::string);
+    ck_assert_uint_eq(netDeviceDesc[4], E_type::ch);
+    ck_assert_uint_eq(netDeviceDesc[5], E_type::u16);
 
     // 验证复杂系统描述符
     ck_assert_uint_eq(smartHomeDesc.size(), 13);
-    ck_assert_uint_eq(smartHomeDesc[ 0], maliu::base);
-    ck_assert_uint_eq(smartHomeDesc[ 1], maliu::vector);
-    ck_assert_uint_eq(smartHomeDesc[ 2], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[ 3], maliu::Device);
-    ck_assert_uint_eq(smartHomeDesc[ 4], maliu::map);
-    ck_assert_uint_eq(smartHomeDesc[ 5], maliu::string);
-    ck_assert_uint_eq(smartHomeDesc[ 6], maliu::ch);
-    ck_assert_uint_eq(smartHomeDesc[ 7], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[ 8], maliu::Sensor);
-    ck_assert_uint_eq(smartHomeDesc[ 9], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[10], maliu::TemperatureSensor);
-    ck_assert_uint_eq(smartHomeDesc[11], maliu::sptr);
-    ck_assert_uint_eq(smartHomeDesc[12], maliu::NetworkSystem);
+    ck_assert_uint_eq(smartHomeDesc[ 0], E_type::Base);
+    ck_assert_uint_eq(smartHomeDesc[ 1], E_type::vector);
+    ck_assert_uint_eq(smartHomeDesc[ 2], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[ 3], E_type::Device);
+    ck_assert_uint_eq(smartHomeDesc[ 4], E_type::map);
+    ck_assert_uint_eq(smartHomeDesc[ 5], E_type::string);
+    ck_assert_uint_eq(smartHomeDesc[ 6], E_type::ch);
+    ck_assert_uint_eq(smartHomeDesc[ 7], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[ 8], E_type::Sensor);
+    ck_assert_uint_eq(smartHomeDesc[ 9], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[10], E_type::TemperatureSensor);
+    ck_assert_uint_eq(smartHomeDesc[11], E_type::sptr);
+    ck_assert_uint_eq(smartHomeDesc[12], E_type::NetworkSystem);
 
     // 序列化/反序列化机器信息
     std::stringstream ss;

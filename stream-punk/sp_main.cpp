@@ -1,7 +1,7 @@
 # include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <limits.h>   // 用于 INT_MAX 和 INT_MIN
+#include <limits.h>
 
 # include "StreamPunk.hpp"
 # include "unit_test.hpp"
@@ -24,18 +24,15 @@ public:
             }();
         (void)initialized;
     }
-    // C++11 线程安全初始化
     LocaleInitializer() { Initialize(); }
 };
 
-#if __cplusplus >= 201703L
-inline LocaleInitializer __locale_initializer;  // C++17 内联实例
-#else
-static LocaleInitializer __locale_initializer;  // 头文件多次包含会有多个实例
-#endif
+inline LocaleInitializer __locale_initializer;
 
 int main(void) {
     INIT_StreamPunk();
+
+    std::printf("streampunk begin...");
 
     int number_failed;
 

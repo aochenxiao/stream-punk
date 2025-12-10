@@ -1,58 +1,34 @@
-[汉语说明](./README_chinese.md)
+# 流水账(StreamPunk) - 现代C++高性能序列化库
+在当今数据驱动的应用中，高效序列化解决方案至关重要。
+流水账专为现代C++设计，你可以原生态使用C++，直接操作对象进行序列化、反序列化，无需额外的包装。
+因为它支持大部分C++标准库中的数据类型，它还支持各种指针数据。
+总之，体验一下你就知道，你会用起来得心应手，如臂使指。
 
-# StreamPunk - Modern C++ High-Performance Serialization Library
+## 目前版本能力
+目前是序列化与反序列化功能。
+已实现与TS之间的序列化与反序列化，JS的实现依靠对TS的编译，所以也算支持JS。
 
-## Why Choose StreamPunk?
+## 快速入门指南
+必须说明的是，目前C++26的标准还没有正式发布，所以StreamPunk目前只支持C++23的标准。
+所以目前的版本是高水平使用宏实现静态元信息。
+当C++26正式发布之后，StreamPunk会迁移到使用C++26的新特性实现静态元信息。
 
-In today's data-driven applications, efficient serialization solutions are critical. StreamPunk is designed for modern C++ and offers:
-
-🚀 **Extreme Performance** - Direct binary operations eliminate text parsing overhead  
-🧩 **Zero-Dependency Integration** - Pure header-only implementation for seamless project integration  
-💡 **Modern Feature Support** - Full compatibility with C++17/20 features including smart pointers, time types, and atomic operations  
-🌐 **Cross-Platform Compatibility** - Built-in machine feature detection automatically handles endianness and architecture differences  
-🧠 **Deep Object Support** - Native handling of polymorphism, circular references, and complex nested structures  
-
-## Solution Comparison: StreamPunk vs Mainstream Serialization Solutions
-
-| Feature                | StreamPunk | JSON       | Protocol Buffers | FlatBuffers | Hessian     |
-|------------------------|------------|------------|------------------|-------------|-------------|
-| **Binary Format**      | ✅          | ❌          | ✅               | ✅           | ✅           |
-| **Zero-Copy Access**   | ❌          | ❌          | ❌               | ✅           | ❌           |
-| **Header-Only**        | ✅          | ❌          | ❌               | ❌           | ❌           |
-| **C++20 Support**      | ✅🌟        | ❌          | ❌               | ❌           | ❌           |
-| **Smart Pointers**     | ✅🌟        | ❌          | ❌               | ❌           | ❌           |
-| **Polymorphic Support**| ✅🌟        | ❌          | ⚠️ Limited       | ❌           | ✅           |
-| **Cross-Platform**     | ✅🌟        | ✅          | ✅               | ✅           | ✅           |
-| **Ease of Installation** | ⭐⭐⭐⭐⭐     | ⭐⭐⭐⭐       | ⭐⭐⭐            | ⭐⭐          | ⭐⭐⭐         |
-| **Usage Flexibility**  | ⭐⭐⭐⭐⭐     | ⭐⭐⭐⭐       | ⭐⭐⭐            | ⭐⭐          | ⭐⭐⭐         |
-| **Performance Estimate** | ⭐⭐⭐⭐       | ⭐⭐         | ⭐⭐⭐⭐           | ⭐⭐⭐⭐⭐      | ⭐⭐⭐         |
-| **Raw Pointer Support**| ✅🌟        | ❌          | ❌               | ❌           | ❌           |
-| **Multi-Language**     | 🚧 Planned  | ✅          | ✅               | ✅           | ✅           |
-
-### Key Advantages:
-- **Installation Simplicity**: Pure header-only design with zero dependencies
-- **Performance**: StreamPunk's direct binary operations rank second only to FlatBuffers' zero-copy
-- **Raw Pointer Support**: Unique native handling of C++ raw pointers
-- **Multi-Language Roadmap**: Future support for JS/TS/Python/Kotlin/Java/Go/Rust
-
-## Quick Start Guide
-
-### 1. Include Header File
+### 1. 包含头文件
 ```cpp
 #include "StreamPunk.hpp"
 ```
 
-### 2. Register Custom Types (in customData.hpp)
+### 2. 注册自定义类型（在customData.hpp）
 ```cpp
 // customData.hpp
 #define Xt_CustomType(X__) \
 X__(Device, Device) \
 X__(Sensor, Sensor) \
 X__(SmartHomeSystem, SmartHomeSystem)
-// Add more business-specific types...
+// 添加更多业务相关类型...
 ```
 
-### 3. Create Serializable Class
+### 3. 创建可序列化类
 ```cpp
 struct Device : public Base {
     #define Xt_Device(X__) \
@@ -61,112 +37,50 @@ struct Device : public Base {
     X__(std::chrono::system_clock::time_point, lastSeen, {})
     
     Device() = default;
-    UseData(Device); // Critical macro declaration
+    UseData(Device); // 关键宏声明
 };
 ```
 
-### 4. Core API Usage
+### 4. 核心API使用
 ```cpp
 int main() {
-    INIT_StreamPunk(); // Mandatory initialization
+    INIT_StreamPunk(); // 必须初始化
     
-    // Serialization
+    // 序列化
     SmartHomeSystem homeSystem;
     std::stringstream binStream;
     O output{binStream};
     output << homeSystem;
     
-    // Deserialization
+    // 反序列化
     SmartHomeSystem restored;
     I input{binStream};
     input >> restored;
     
-    // Deep Copy
+    // 深拷贝
     DeepCopier copier;
     SmartHomeSystem copy;
     deepCopy(copier, copy, homeSystem);
-    copier.clear(); // Mandatory cleanup
+    copier.clear(); // 必须清理
 }
 ```
 
-## Feature Overview
+## 使用规范
 
-### Supported Data Types
-| Category            | Supported Types                                                                 |
-|---------------------|---------------------------------------------------------------------------------|
-| **Primitives**      | All integers/floats, bool, character types (char, wchar_t, char8_t, etc.)       |
-| **Containers**      | vector, list, deque, map, set, unordered_map, unordered_set, bitset            |
-| **Smart Pointers**  | shared_ptr, unique_ptr, weak_ptr (native support)                               |
-| **Time Types**      | chrono::duration, chrono::time_point                                           |
-| **Filesystem**      | filesystem::path (full support)                                                |
-| **Advanced Types**  | variant, optional, atomic, tuple                                         |
-| **Special Types**   | Serialization only: initializer_list, span, string_view            |
+### 关键约束
+1. **编译要求**：
+   - C++20或更高标准
+   - 必须启用RTTI
+   - UTF-8无BOM编码源文件
 
-### Core Features
-- 🔄 **Polymorphic Serialization** - Automatic handling of inheritance hierarchies
-- ♻️ **Circular References** - Intelligent handling of object graphs with mutual references
-- 📊 **Deep Copy** - Complete object graph duplication system
-- 📝 **Self-Describing Data** - Built-in type description system
-- 🔋 **Low Memory Overhead** - Efficient memory management strategies
-- ⏱️ **Time Precision** - Attosecond-level time resolution
-
-## Usage Guidelines & Best Practices
-
-### Critical Constraints
-1. **Compilation Requirements**:
-   - C++20 or higher standard
-   - RTTI must be enabled
-   - UTF-8 encoding without BOM
-
-2. **Class Design**:
-   ```cpp
-   struct MyClass : public Base { // Must inherit from Base
-       // Declare serialized fields using macro
-       #define Xt_MyClass(X__) \
-           X__(int, value, 0) \
-           X__(std::string, name, "")
-       
-       UseData(MyClass); // Critical macro
-   };
-   ```
-
-3. **Pointer Usage**:
-   - Raw pointer members are permitted but recommended only when used with std::unique_ptr
-   - Recommended combinations:
+2. **指针使用**：
+   - 可使用裸指针成员, 仅推荐配合std::unique_ptr时使用.
+   - 推荐组合：
      - std::shared_ptr + std::weak_ptr
-     - std::unique_ptr + raw pointer
-   - Important: When using void*, ensure pointed objects are serialized BEFORE the void* pointer
+     - std::unique_ptr + raw ptr
+   - 使用void\*时请注意:序列化时,遇到void\*,必须在此之前,其指向的对象就已经被序列化过.
 
-### Cross-Platform Considerations
-```cpp
-struct StreamPunkMachineInfo {
-    u8 endian; // Endianness: 0=Little, 1=Big
-    // Other platform features...
-    
-    void init() {
-        // Auto-detect current platform features
-        if constexpr (std::endian::native == std::endian::little) {
-            endian = 0; // Little-endian
-        }
-        else if constexpr (std::endian::native == std::endian::big) {
-            endian = 1; // Big-endian
-        }
-        // ...
-    }
-};
-```
+**重要限制**：当前版本仅支持相同端序架构（大端-大端或小端-小端）的机器间数据互通，不支持跨端序数据交换。
 
-**Important Limitation**: Current version only supports data exchange between same-endian architectures (big-big or little-little), not cross-endian transfers.
-
-### Performance Optimization
-- Use direct memory operations for trivially copyable types
-- Utilize `std::span` for large arrays to avoid copying
-- Reuse `O`/`I` objects during frequent serialization operations
-
-## Development Roadmap
-- 🚧 v0.1.3: Cross-platform data query capabilities
-- 🚀 v0.2.0: Data version management
-- 🌍 v0.3.x: Multi-language support (JS/TS/Python/Kotlin/Java/Go/Rust)
-- 🎨 v0.4.0: Data visualization tools
-
-StreamPunk provides a powerful and flexible serialization solution for modern C++ applications, especially suitable for scenarios requiring complex object relationships and high-performance data exchange. With its clean API design and deep system integration, it significantly reduces development costs for complex data processing.
+# 如何运行示例
+安装个visual studio 2022以上的版本, 打开项目，进行如此配置：

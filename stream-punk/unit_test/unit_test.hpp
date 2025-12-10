@@ -14,11 +14,9 @@
 inline Suite* s = suite_create("StreamPunk");
 inline TCase* tc_core = tcase_create("Core");
 
-
-// 辅助函数（兼容 GCC/Clang/MSVC）
 inline std::string demangle(const char* mangled) {
 #ifdef _MSC_VER
-    return mangled; // MSVC 直接返回可读名称
+    return mangled;
 #else
     int status;
     char* name = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);

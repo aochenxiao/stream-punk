@@ -1,0 +1,25 @@
+.list {
+  margin-top: 4px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cccccc;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.count {
+  color: #969696;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.empty {
+  color: #6e6e6e;
+  font-style: italic;
+  padding: 20px 0;
+  text-align: center;
+  font-size: 14px;
+}

@@ -1,0 +1,49 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6e6e6e;
+  margin-top: 2px;
+  display: block;
+}
+
+.loading {
+  text-align: center;
+  color: #969696;
+  padding: 20px;
+  font-size: 14px;
+}
+
+.placeholder {
+  text-align: center;
+  padding: 48px 0;
+  color: #6e6e6e;
+}
+
+.placeholderIcon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.placeholderText {
+  font-size: 14px;
+}

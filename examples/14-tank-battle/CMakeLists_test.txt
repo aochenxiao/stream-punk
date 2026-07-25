@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(TestMinimal LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+add_executable(test_minimal test_minimal.cpp)
+target_include_directories(test_minimal PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)

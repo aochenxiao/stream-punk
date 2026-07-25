@@ -1,0 +1,42 @@
+.panel {
+  margin-bottom: 20px;
+}
+
+.fileName {
+  font-size: 13px;
+  color: #6e6e6e;
+  margin-bottom: 10px;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cards {
+  display: flex;
+  gap: 12px;
+}
+
+.card {
+  flex: 1;
+  background: #2d2d30;
+  border: 1px solid #3e3e42;
+  border-radius: 6px;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.label {
+  font-size: 11px;
+  color: #969696;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #e0e0e0;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+}

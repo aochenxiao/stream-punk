@@ -1,0 +1,280 @@
+========================================
+Java SPOI 刁钻边界测试套件
+========================================
+
+=== Varint 边界攻击 ===
+  ? max uint32
+  ? multi-byte boundary
+  ? zero
+  ? truncated single byte
+  ? truncated multi-byte
+  ? empty data
+  ? max int
+  ? very large value
+
+=== 指令解析边界 ===
+  ? empty stream
+  ? max instructions
+  ? zero-length operand
+  ? zero-length path
+  ? large operand
+  ? deep path
+  ? single instruction
+
+=== 路径导航边界 ===
+  ? deref on non-pointer
+  ? deref on null
+  ? index out of bounds
+  ? index on non-list
+  ? member on non-object
+  ? navigate on null
+  ? member index out of range
+  ? nested through empty map
+  ? empty path
+  ? negative index on list
+  ? map index out of bounds
+  ? navigate to empty list
+  ? navigate to empty map
+  ? navigate to zero value
+  ? navigate struct by public fields
+
+=== 指令序列攻击 ===
+  ? EXEC without PIPE
+  ? double EXEC
+  ? double PIPE
+  ? write after EXEC
+  ? read op without PIPE
+  ? missing EXEC
+  ? standalone EXEC
+  ? only PIPE no EXEC
+
+=== 空容器处理 ===
+  ? empty PIPE
+  ? TAKE 0
+  ? TAKE more than available
+  ? DROP all
+  ? DROP 0
+  ? REVERSE empty
+  ? REVERSE single
+  ? DISTINCT empty
+  ? DISTINCT single
+  ? FILTER no match
+  ? SELECT empty result
+  ? SORT empty
+  ? SORT single
+
+=== 聚合边界 ===
+  ? COUNT on empty
+  ? ANY on empty
+  ? ALL on empty (vacuous truth)
+  ? FIND on empty
+  ? COUNT on single
+  ? COUNT after FILTER empty
+  ? ANY after FILTER empty
+  ? ALL after FILTER empty (vacuous truth)
+  ? FIND after FILTER empty
+  ? ANY on empty pipe
+  ? ALL on empty pipe (vacuous truth)
+  ? FIND on empty pipe
+
+=== 写操作边界 ===
+  ? ADD to zero
+  ? ADD large value
+  ? REMOVE from empty
+  ? REMOVE out of bounds
+    (INSERT at zero on typed list succeeded)
+  ? INSERT at zero
+    (INSERT at end on typed list succeeded)
+  ? INSERT at end
+  ? REPLACE out of bounds
+    (REPLACE first on typed list succeeded)
+  ? REPLACE first
+  ? double SET
+  ? SETNULL then SET
+  ? RESET then SET
+  ? SETNULL on int field
+  ? RESET on int field
+    (APPEND on typed list succeeded)
+  ? APPEND to list
+  ? ADD string concat
+
+=== 嵌套导航边界 ===
+  ? nested SELECT
+  ? SET nested path
+  ? ADD nested path
+
+=== TAKEWHILE/DROPWHILE 边界 ===
+  ? TAKEWHILE never true
+  ? TAKEWHILE always true
+  ? DROPWHILE never true
+  ? DROPWHILE always true
+  ? TAKEWHILE on empty
+  ? DROPWHILE on empty
+  ? TAKEWHILE partial
+  ? DROPWHILE partial
+
+=== FILTER 比较操作边界 ===
+  ? FILTER all comparison ops
+  ? FILTER unknown cmpOp
+  ? FILTER short operand
+  ? FILTER all match
+  ? FILTER none match
+
+=== 操作数解析边界 ===
+  ? ANY short operand
+  ? ALL short operand
+  ? REMOVE short operand
+  ? INSERT short operand
+  ? REPLACE short operand
+
+=== 多管道组合边界 ===
+  ? FILTER-TAKE-DROP-REVERSE chain
+  ? SORT ascending by level
+  ? SELECT then FILTER causes exception
+  ? all operations chain
+  ? DISTINCT then COUNT
+
+=== 类型注册表边界 ===
+  ? empty registry
+  ? nonexistent type
+  ? partial registry
+
+=== 容器操作边界 ===
+  ? KEYS on map
+  ? VALUES on map
+  ? JOIN on slices
+  ? JOIN mixed
+  ? KEYS on empty
+  ? JOIN on empty
+
+=== 未实现操作码边界 ===
+  ? unknown opcode 0xFF
+  ? NAV opcode throws
+  ? DEREF opcode throws
+
+=== 结果类型边界 ===
+  ? result UNDEF
+  ? result SINGLE
+  ? result VECTOR
+
+=== PIPE 路径导航 ===
+  ? PIPE with path to list
+  ? PIPE with path to map
+
+=== 反序列化边界 ===
+  ? deserialize empty
+  ? deserialize 1 byte
+  ? deserialize 2 bytes
+  ? deserialize 4 bytes
+  ? deserialize 8 bytes
+  ? deserialize UTF-8 string
+  ? deserialize 3 bytes
+  ? deserialize 5 bytes
+  ? deserialize non-UTF-8 bytes
+
+=== 状态隔离 ===
+  ? executor state isolation
+
+=== 大数据量 ===
+  ? large dataset
+
+=== COUNT 后管道操作 ===
+  ? COUNT then TAKE
+
+=== SELECT/SORT 空路径 ===
+  ? SELECT empty path
+  ? SORT empty path
+
+=== DISTINCT 去重边界 ===
+  ? DISTINCT all same
+  ? DISTINCT all different
+
+=== Map 导航 ===
+  ? navigate map by index
+  ? navigate to metadata map
+
+=== 负索引攻击 ===
+  ? INSERT negative index
+  ? INSERT index beyond size
+  ? REPLACE negative index
+  ? REMOVE negative index
+
+=== 聚合多元素 ===
+  ? ANY all false
+  ? ANY one true
+  ? ALL all true
+  ? ALL one false
+  ? FIND first match
+  ? FIND no match
+
+=== PIPE 边界 ===
+  ? PIPE single value
+  ? PIPE then SELECT then PIPE
+  ? PIPE then KEYS
+  ? PIPE then VALUES
+
+=== FILTER 刁钻边界 ===
+  ? FILTER memberIdx out of bounds
+  ? FILTER string comparison
+  ? FILTER null field
+
+=== 更多未处理操作码 ===
+  ? IDX opcode throws
+  ? UNWRAP opcode throws
+
+=== REVERSE 刁钻边界 ===
+  ? double REVERSE
+  ? REVERSE then TAKE
+
+=== SORT 刁钻边界 ===
+  ? SORT then REVERSE (desc)
+  ? SORT already sorted
+
+=== 容器操作刁钻边界 ===
+  ? KEYS on empty map
+  ? VALUES on empty map
+  ? KEYS on non-map
+  ? VALUES on non-map
+  ? JOIN single element
+
+=== 写操作路径刁钻边界 ===
+  ? SET empty path
+  ? ADD empty path
+  ? ADD field type mismatch
+  ? APPEND to non-list
+  ? REMOVE from non-list
+  ? INSERT to non-list
+
+=== TAKE/DROP 溢出攻击 ===
+  ? TAKE very large
+  ? DROP very large
+  ? TAKE negative operand
+  ? DROP negative operand
+
+=== Varint 负值编码 ===
+  ? varint negative value
+  ? varint negative large
+
+=== 深层嵌套 ===
+  ? deep nested navigation
+  ? deep nested SET
+
+=== FILTER-聚合链 ===
+  ? FILTER then ANY
+  ? FILTER then ALL
+  ? FILTER then FIND
+
+=== 空字节流 ===
+  ? execute empty stream
+  ? execute null stream
+
+=== DISTINCT 对象去重 ===
+  ? DISTINCT with objects
+
+=== compareValues null 边界 ===
+  ? compare null eq null
+  ? compare null ne value
+
+========================================
+通过: 189, 失败: 0
+========================================

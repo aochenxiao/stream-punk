@@ -1,0 +1,17 @@
+.desc {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+.bracket {
+  color: #808080;
+  font-weight: bold;
+  margin: 0 1px;
+}
+
+.punct {
+  color: #808080;
+  margin: 0 1px;
+}

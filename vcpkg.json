@@ -1,0 +1,25 @@
+{
+  "name": "stream-punk",
+  "version": "1.0.0",
+  "description": "跨语言实时数据查询与序列化框架",
+  "dependencies": [
+    "doctest",
+    "cxxopts",
+    "ixwebsocket"
+  ],
+  "features": {
+    "orm": {
+      "description": "ORM 集成测试支持（需要 soci、sqlite3、mysql 等）",
+      "dependencies": [
+        {
+          "name": "soci",
+          "features": ["sqlite3", "mysql"]
+        },
+        "sqlite3",
+        "libmysql",
+        "openssl",
+        "zlib"
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+.picker {
+  border: 2px dashed #3e3e42;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 20px;
+  user-select: none;
+}
+
+.picker:hover {
+  border-color: #0078d4;
+  background: rgba(0, 120, 212, 0.05);
+}
+
+.dragOver {
+  border-color: #0078d4;
+  background: rgba(0, 120, 212, 0.1);
+}
+
+.input {
+  display: none;
+}
+
+.icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.text {
+  font-size: 15px;
+  color: #cccccc;
+  margin-bottom: 4px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6e6e6e;
+}

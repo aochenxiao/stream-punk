@@ -1,0 +1,12 @@
+[package]
+name = "spoi-client"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "spoi-cross-client-rust"
+path = "client.rs"
+
+[[bin]]
+name = "spoi-cross-server-rust"
+path = "server.rs"

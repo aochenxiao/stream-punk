@@ -2,43 +2,295 @@
 
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20) [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]() [![Skills](https://img.shields.io/badge/AI_Skills-12个-ff69b4)](./skills/)
 
-StreamPunk 是一个以 C++ 为中心、辐射 8 种语言的跨语言数据互通框架。
+---
 
-**数据全在内存里，直接查，不用数据库。** 当今计算机内存越来越大，把数据放在内存中直接用 SPOI 查询，比走 NoSQL 快得多。数据一边被修改，一边增量更新写入硬盘；需要灵活查询时，还能用内置 ORM 将内存数据存入数据库。
+## 你是一个 C++ 程序员，今天你遇到了这些问题...
 
-**你所需要做的只是维护好用 C++ 定义的数据类型。** 定义好数据类型后，通过 sp-gen 工具自动生成 Python、Go、Rust、Java、Kotlin、TypeScript、JavaScript 的等价代码，实现各语言之间**实时、自由地动态查询和更新**彼此的数据——无需 C++ 程序参与，任意两个不同语言的程序之间都可以实现数据互通。
+假设你正在用 C++ 写一个游戏服务端，或者一个实时协作工具，或者一个 IoT 数据网关...
 
-> **AI 开箱即用**：本项目包含 11 个 AI Skill 文档，覆盖类型定义、代码生成、SPOI 查询和各语言集成。使用支持 Skill 机制的 AI 编程助手（如 Cursor、Trae）时，AI 会自动加载这些 Skill，无需查阅文档即可正确编写 StreamPunk 代码。[详见 AI 辅助开发](#ai-辅助开发)
+### 第一天：序列化好烦
 
-**核心能力**：内存直接 SPOI 查询 · 增量更新持久化 · 二进制序列化 · JSON 互转 · 深拷贝 · ORM SQL 生成
+你定义了一个 `Player` 结构体，有名字、等级、血量、背包...
+
+```cpp
+struct Player {
+    std::string name;
+    int level;
+    double health;
+    std::vector<std::string> items;
+};
+```
+
+然后你需要：
+- 存到文件 → 手写二进制序列化/反序列化
+- 打日志 → 手写 `toJson()`
+- 做快照回滚 → 手写深拷贝（还要处理指针循环引用！）
+- 存数据库 → 手写 CREATE TABLE、INSERT、UPDATE 语句
+
+**每加一个字段，上面五处代码都要改，漏改一处就是 Bug。**
+
+这时候你想：**要是我只定义一次结构体，这些代码自动生成就好了。**
 
 ---
 
-### 一分钟了解
+### 用了 StreamPunk 之后：继承 Base，一个宏搞定
 
-| 我想... | 怎么做 |
-|---------|--------|
-| 只序列化 C++ 对象 | [路径 A](#路径-a纯-c-项目) — 继承 `Base`，`UseData` 宏，完事 |
-| C++ 服务端 + 多语言客户端 | [路径 B](#路径-bc-跨语言预生成代码模式) — 跑 sp-gen，自动生成各语言类型 |
-| 跨语言实时查询对方数据 | [路径 C1](#路径-c1跨语言-spoi-查询) — 构建 SPOI 指令，发二进制流过去查 |
-| 字段级增量更新 | [路径 C2](#路径-c2spoi-增量更新shadow-模式) — Shadow 代理，自动生成 SET/ADD/APPEND |
-| 类型频繁变化、不想维护代码 | [路径 D](#路径-d动态-schema-解析高级功能) — 发 Schema JSON，运行时适配 |
+```cpp
+#include <stream-punk/StreamPunk.hpp>
+#include <stream-punk/StreamPunkJson.hpp>
 
-> **适用场景**：游戏服务端、实时协作工具、IoT 数据交换、微服务跨语言通信——任何需要 C++ 定义数据模型、多语言客户端实时同步的场景。
+struct Player : public Base {
+    #define Xt_Player(X__) \
+    X__(std::string, name, "") \
+    X__(i32, level, 1) \
+    X__(f64, health, 100.0) \
+    X__(vector<string>, items, {})
+    UseData(Player);
+    UseDataJson(Player);
+};
+```
+
+然后：
+
+```cpp
+int main() {
+    INIT_StreamPunk();
+
+    Player p{"Alice", 42, 88.5, {"sword", "shield"}};
+
+    // ✅ 二进制序列化（自动处理所有字段）
+    std::stringstream ss;
+    O{ss} << p;
+    Player p2; I{ss} >> p2;
+
+    // ✅ JSON（自动生成）
+    std::cout << p.toJson() << std::endl;
+
+    // ✅ 深拷贝（自动追踪指针，避免循环引用）
+    DeepCopier c; Player p3;
+    deepCopy(c, p3, p); c.clear();
+
+    // ✅ ORM（自动生成 SQL 建表和 CRUD 语句）
+    // auto sql = Player::sqlCreateTable();
+}
+```
+
+**这就是路径 A：纯 C++ 项目，五分钟上手，解决你 80% 的序列化烦恼。**
+
+> 完整代码见 `examples/01-basic-cpp/`
+
+---
+
+### 第二周：Python 脚本要读数据
+
+你的 C++ 服务端跑起来了，策划同学写了个 Python 脚本，想读取玩家数据做数据分析。
+
+你面临选择：
+1. **用 Protobuf/FlatBuffers**：先写 `.proto` 文件，然后生成 C++ 和 Python 代码——但是你已经在 C++ 里定义好结构体了，还要再维护一份 `.proto`？而且 JSON、深拷贝、ORM 它不管啊。
+2. **写 HTTP 接口**：给每个查询需求写一个接口——"查所有等级>10的玩家"、"查血量低于50的玩家"、"按分数排序取前10"... 需求天天变，接口天天加，烦死了。
+3. **发整个对象列表**：每次查询把所有玩家序列化成 JSON 发过去，Python 自己过滤——数据量大了卡成 PPT，带宽爆炸。
+
+这时候你想：**能不能 C++ 定义好类型，Python/TypeScript/Go/Java 自动获得一模一样的类型定义？而且不用我手写接口，Python 就能直接"查"我内存里的数据？**
+
+---
+
+### 用了 StreamPunk 之后：一条命令，七语言自动同步
+
+C++ 端定义好类型后，**只需两步**：
+
+```bash
+# 1. 编译运行元数据提取器 → 生成类型信息文件
+# 2. 一键生成 Python 代码
+sp-gen -t py-meta -p ./data.py
+```
+
+然后 Python 端：
+
+```python
+from data import Player
+
+# 和 C++ 一模一样的结构体，类型安全
+p = Player(name="Alice", level=42, health=88.5, items=["sword", "shield"])
+print(p.to_json())  # ✅ 同样支持 JSON
+```
+
+**支持的语言：Python、TypeScript、JavaScript、Go、Rust、Java、Kotlin——一条命令，全部自动生成。**
+
+改了 C++ 类型？重跑 `sp-gen`，所有语言自动同步——哪漏改了编译直接报错，不会等到运行时才出问题。
+
+**这就是路径 B：C++ 服务端 + 多语言客户端，类型定义一份维护，全语言自动同步。**
+
+---
+
+### 第三周：Python 想查 C++ 内存里的数据，不想全量拷贝
+
+现在 Python 能发数据给 C++ 了，但反过来呢？Python 想查："所有等级>10、分数前5的玩家名字"。
+
+如果每次都把所有玩家对象全量序列化发过去：
+- 1000 个玩家还好，10 万个玩家呢？
+- 只需要 5 个结果，却要传 10 万个对象的全量数据？
+- 而且 C++ 内存里明明已经有这些数据了，为什么不能直接在那边查完只返回结果？
+
+你可能会想："要是能像查数据库一样查内存里的对象就好了——`SELECT name FROM players WHERE level > 10 ORDER BY score DESC LIMIT 5`，直接发查询语句过去，对方查完返回结果就行。"
+
+**好消息：StreamPunk 就是这么干的。**
+
+---
+
+### SPOI：把 SQL 查询装进二进制协议，直接查内存
+
+SPOI（StreamPunk Operation Instruction）是 StreamPunk 的查询协议，相当于把 C++20 的 `<ranges>` 操作装进了二进制流——35 个操作码，filter、sort、select、take、distinct、count、reduce、group... 应有尽有。
+
+**Python 端构建查询（类型安全，链式调用）：**
+
+```bash
+sp-gen -t spoi-py -p ./spoi_builder.py  # 生成查询 Builder
+```
+
+```python
+from spoi_builder import SpoiQuery, Cmp, SpoiTestPlayer as P
+
+# 查：等级>10，按分数降序，取前5名的名字
+query = SpoiQuery("Player") \
+    .filter_i32(P.level, Cmp.GT, 10) \
+    .sort(P.score, ascending=False) \
+    .take(5) \
+    .select(P.name) \
+    .build()  # → 返回 bytes，通过 TCP/WebSocket 发给 C++
+
+# 发送 query... 接收 result_bytes...
+```
+
+**C++ 端（或者任何其他语言！）接收并执行：**
+
+```cpp
+// 收到 query 字节流，直接在内存玩家列表上执行
+SpoiExecutor exec;
+auto result = exec.execute(playersList, queryBytes);
+// 把 result 发回 Python——只包含5个名字，极小的数据量
+```
+
+**重点是：任何语言都可以当查询方，任何语言都可以当被查询方。Python 查 C++、TypeScript 查 Go、Java 查 Rust... 统统可以，全程只传二进制指令和结果，不需要共享内存，不需要序列化整个对象图。**
+
+**这就是路径 C1：跨语言 SPOI 实时查询——内存即数据库，直接查，比 NoSQL 还快。**
+
+> 完整代码见 `examples/08-spoi-cross-lang/` 和 `examples/09-spoi-cross-lang-all/`
+
+---
+
+### 第四周：不想全量同步，想要字段级增量更新
+
+玩家捡了一把剑，血量+10，名字改成了"Bob"... 你真的需要把整个 `Player` 对象重新发一遍吗？
+
+如果是实时协作编辑器，10 个人同时改文档，每次都发全量文档？那也太蠢了。
+
+这时候你需要：**只发变更的部分。**
+
+- 名字改了 → SET name = "Bob"
+- 血量加了 → ADD health = 10
+- 背包多了东西 → APPEND items = "sword"
+
+但是手写这些增量指令？又回到了第一天的烦恼——每个字段都要手写，漏了就是 Bug。
+
+---
+
+### Shadow 模式：像操作普通对象一样写代码，自动生成增量指令
+
+C++ 端：
+
+```cpp
+#include <stream-punk/StreamPunkSPOIShadow.hpp>
+
+std::stringstream deltaStream;
+auto shadow = sp::spoi(player, deltaStream);  // 套个代理
+
+shadow.name = "Bob";              // ✅ 自动记录 SET name
+shadow.health += 10;              // ✅ 自动记录 ADD health
+shadow.items.append("sword");     // ✅ 自动记录 APPEND items
+// shadow 析构时，所有增量指令自动写入 deltaStream
+// 把 deltaStream 发给其他客户端，对方应用同样的增量即可
+```
+
+跨语言也一样——Python/TS/Go 端用 `SpoiUpdate` builder 构建更新指令，发给 C++ 执行，字段级增量更新，带宽占用极小。
+
+**这就是路径 C2：SPOI 增量更新——只传变化的部分，实时同步零压力。**
+
+---
+
+### 第五周：类型天天改，不想每次都重编译所有客户端
+
+前面说的都很好，但有个问题：开发阶段类型天天加字段、改结构，每次改完 C++ 都要重跑 sp-gen，然后 Python/TS/Go 客户端全都要重新拉代码、重新编译、重新部署——策划同学在旁边等得不耐烦了："我就加个测试字段，能不能快点？"
+
+OK，满足你。
+
+---
+
+### 动态 Schema 模式：类型不用预生成，运行时自动适配
+
+C++ 端：
+```cpp
+std::string schemaJson = buildAllSchemas();  // 一键导出所有类型的 Schema JSON
+// 通过 WebSocket 发给所有已连接的客户端
+```
+
+Python 端（不需要预生成任何代码！）：
+```python
+registry.load_schema(schema_json)  # 收到 Schema，运行时直接加载
+reader = SpReader(data_bytes, registry)
+obj = reader.read_any()  # 直接读出对象，自动适配新字段
+print(obj.name, obj.level, obj.new_field)  # 新字段自动有了
+```
+
+| 场景 | 预生成模式（路径B） | 动态 Schema 模式（路径D） |
+|------|---------------------|---------------------------|
+| C++ 加字段 | 重跑 sp-gen，重编译客户端 | 重发 Schema，自动适配 |
+| 类型安全 | ✅ 编译期检查 | ⚠️ 运行时检查 |
+| 性能 | ✅ 最优 | ⚠️ 稍慢（可接受） |
+| 适合阶段 | 生产环境，类型稳定 | 开发调试，快速迭代 |
+
+**这就是路径 D：动态 Schema——开发阶段怎么快怎么来，上线了再切回预生成模式保安全。**
+
+> 完整代码见 `examples/03-dynamic-schema/`
+
+---
+
+## 所以，StreamPunk 到底是什么？
+
+一句话总结：
+
+> **你只需要用 C++ 定义好数据类型，剩下的——序列化、JSON、深拷贝、ORM、多语言类型同步、跨语言内存查询、字段级增量更新——StreamPunk 全包了。**
+
+从简单到复杂，按需使用：
+
+| 你想... | 用什么 | 难度 |
+|---------|--------|:----:|
+| C++ 里序列化/JSON/深拷贝不想手写 | 路径 A：继承 Base + UseData | ⭐ |
+| C++ 类型要给 Python/TS/Go 用，不想手写多份 | 路径 B：sp-gen 自动生成 7 语言代码 | ⭐⭐ |
+| 多语言程序之间想实时查对方内存数据 | 路径 C1：SPOI 查询协议 | ⭐⭐⭐ |
+| 实时状态同步，不想传全量对象 | 路径 C2：SPOI Shadow 增量更新 | ⭐⭐⭐ |
+| 开发阶段类型天天改，懒得每次重生成 | 路径 D：动态 Schema 运行时适配 | ⭐⭐ |
+
+**适用场景**：游戏服务端、实时协作工具、IoT 数据交换、微服务跨语言通信——任何需要 C++ 定义数据模型、多语言客户端实时同步的场景。
+
+---
+
+> **AI 开箱即用**：本项目包含 12 个 AI Skill 文档，覆盖类型定义、代码生成、SPOI 查询和各语言集成。使用支持 Skill 机制的 AI 编程助手（如 Cursor、Trae）时，AI 会自动加载这些 Skill，无需查阅文档即可正确编写 StreamPunk 代码。[详见 AI 辅助开发](#ai-辅助开发)
+
+**核心能力一览**：内存直接 SPOI 查询 · 增量更新持久化 · 二进制序列化 · JSON 互转 · 深拷贝 · ORM SQL 生成
 
 ---
 
 ## 目录
 
-- [核心能力](#核心能力)
+- [核心能力详解](#核心能力详解)
 - [与现有方案对比](#与现有方案对比)
 - [架构特点](#架构特点)
 - [快速开始](#快速开始)
 - [项目结构](#项目结构)
 - [AI 辅助开发](#ai-辅助开发)
-- [三条使用路径](#三条使用路径按需选择)
+- [三条使用路径，按需选择](#三条使用路径按需选择)
   - [路径 A：纯 C++ 项目](#路径-a纯-c-项目)
-  - [路径 B：C++ 跨语言（预生成代码模式）](#路径-bc-跨语言预生成代码模式)
+  - [路径 B：C++ ↔ 跨语言（预生成代码模式）](#路径-bc-跨语言预生成代码模式)
   - [路径 C1：跨语言 SPOI 查询](#路径-c1跨语言-spoi-查询)
   - [路径 C2：SPOI 增量更新（Shadow 模式）](#路径-c2spoi-增量更新shadow-模式)
   - [路径 D：动态 Schema 解析](#路径-d动态-schema-解析高级功能)
@@ -50,7 +302,7 @@ StreamPunk 是一个以 C++ 为中心、辐射 8 种语言的跨语言数据互�
 
 ---
 
-## 核心能力
+## 核心能力详解
 
 | 能力 | 说明 | 适用场景 |
 |------|------|---------|
@@ -167,7 +419,7 @@ int main() {
 | `include/stream-punk/` | Header-only 核心库，复制到你的 C++ 项目即可用 |
 | `tools/sp-gen/` | 统一代码生成器（跨语言），读取元数据 .bin 生成各语言代码 |
 | `runtimes/` | 各语言运行时文件，手动复制到目标项目 |
-| `skills/` | AI 辅助技能文档——共 11 个 `SKILL.md`，覆盖 C++ 类型定义、sp-gen、SPOI、7 种语言集成 |
+| `skills/` | AI 辅助技能文档——共 12 个 `SKILL.md`，覆盖 C++ 类型定义、sp-gen、SPOI、7 种语言集成 |
 | `examples/` | 10 个场景示例，从纯 C++ 序列化到 8 语言全量集成测试 |
 | `scripts/` | `setup.ps1` 一键安装，`run-all.ps1` 一键跑所有示例 |
 

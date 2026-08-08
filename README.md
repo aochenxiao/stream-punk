@@ -1,6 +1,6 @@
 # StreamPunk（流水账）— 跨语言实时数据查询与序列化框架
 
-[![C++](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20) [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]() [![Skills](https://img.shields.io/badge/AI_Skills-12个-ff69b4)](./skills/)
+[![C++](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20) [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]() [![Skills](https://img.shields.io/badge/AI_Skills-14个-ff69b4)](./skills/)
 
 ---
 
@@ -8,7 +8,9 @@
 
 假设你正在用 C++ 写一个游戏服务端，或者一个实时协作工具，或者一个 IoT 数据网关...
 
-### 第一天：序列化好烦
+---
+
+### 青铜段位：C++ 里这些重复代码，我不想再写了
 
 你定义了一个 `Player` 结构体，有名字、等级、血量、背包...
 
@@ -33,7 +35,7 @@ struct Player {
 
 ---
 
-### 用了 StreamPunk 之后：继承 Base，一个宏搞定
+### 获得新技能：继承 Base，一个宏搞定所有重复劳动
 
 ```cpp
 #include <stream-punk/StreamPunk.hpp>
@@ -58,30 +60,43 @@ int main() {
 
     Player p{"Alice", 42, 88.5, {"sword", "shield"}};
 
-    // ✅ 二进制序列化（自动处理所有字段）
+    // 二进制序列化（自动处理所有字段）
     std::stringstream ss;
     O{ss} << p;
     Player p2; I{ss} >> p2;
 
-    // ✅ JSON（自动生成）
+    // JSON（自动生成）
     std::cout << p.toJson() << std::endl;
 
-    // ✅ 深拷贝（自动追踪指针，避免循环引用）
+    // 深拷贝（自动追踪指针，避免循环引用）
     DeepCopier c; Player p3;
     deepCopy(c, p3, p); c.clear();
-
-    // ✅ ORM（自动生成 SQL 建表和 CRUD 语句）
-    // auto sql = Player::sqlCreateTable();
 }
 ```
 
-**这就是路径 A：纯 C++ 项目，五分钟上手，解决你 80% 的序列化烦恼。**
+序列化、JSON、深拷贝都搞定了，你美滋滋地跑了一个星期。
+
+直到运营同学找过来："帮我查一下上个月所有充值超过100块、等级在30级以上、并且上周登录过的玩家，按充值金额排序，导出成 Excel。"
+
+你懵了。SPOI 内存查询确实快，查在线玩家、查实时排行榜没问题，但这种跨时间范围、多表联查、聚合统计的需求，还是 SQL 更擅长啊。总不能把所有历史数据都塞在内存里吧？
+
+这时候你想起了 StreamPunk 还自带 ORM：
+
+```cpp
+    // ORM（自动生成 SQL 建表和 CRUD 语句）
+    // 内存里实时操作用 SPOI，需要复杂查询、历史统计的时候，
+    // 自动生成 SQL 把数据同步到 MySQL，想怎么查就怎么查
+    // Player::sqlCreateTable();    // 自动建表
+    // Player::sqlInsert(p);        // 自动生成 INSERT
+```
+
+**纯 C++ 项目，五分钟上手，序列化/JSON/深拷贝/ORM 全给你自动搞定。**
 
 > 完整代码见 `examples/01-basic-cpp/`
 
 ---
 
-### 第二周：Python 脚本要读数据
+### 白银段位：Python 脚本要读数据，总不能手写两份类型吧？
 
 你的 C++ 服务端跑起来了，策划同学写了个 Python 脚本，想读取玩家数据做数据分析。
 
@@ -94,7 +109,7 @@ int main() {
 
 ---
 
-### 用了 StreamPunk 之后：一条命令，七语言自动同步
+### 获得新技能：一条命令，七语言自动同步类型
 
 C++ 端定义好类型后，**只需两步**：
 
@@ -111,18 +126,18 @@ from data import Player
 
 # 和 C++ 一模一样的结构体，类型安全
 p = Player(name="Alice", level=42, health=88.5, items=["sword", "shield"])
-print(p.to_json())  # ✅ 同样支持 JSON
+print(p.to_json())  # 同样支持 JSON
 ```
 
-**支持的语言：Python、TypeScript、JavaScript、Go、Rust、Java、Kotlin——一条命令，全部自动生成。**
+**支持的语言：** ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat&logo=python&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white) ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat&logo=go&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000000?style=flat&logo=rust&logoColor=white) ![Java](https://img.shields.io/badge/-Java-ED8B00?style=flat&logo=openjdk&logoColor=white) ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white) **——一条命令，全部自动生成。**
 
 改了 C++ 类型？重跑 `sp-gen`，所有语言自动同步——哪漏改了编译直接报错，不会等到运行时才出问题。
 
-**这就是路径 B：C++ 服务端 + 多语言客户端，类型定义一份维护，全语言自动同步。**
+**C++ 服务端 + 多语言客户端，类型定义一份维护，全语言自动同步。**
 
 ---
 
-### 第三周：Python 想查 C++ 内存里的数据，不想全量拷贝
+### 黄金段位：能不能像查数据库一样，直接查内存里的对象？
 
 现在 Python 能发数据给 C++ 了，但反过来呢？Python 想查："所有等级>10、分数前5的玩家名字"。
 
@@ -137,7 +152,7 @@ print(p.to_json())  # ✅ 同样支持 JSON
 
 ---
 
-### SPOI：把 SQL 查询装进二进制协议，直接查内存
+### 获得新技能：SPOI——把 SQL 查询装进二进制协议，直接查内存
 
 SPOI（StreamPunk Operation Instruction）是 StreamPunk 的查询协议，相当于把 C++20 的 `<ranges>` 操作装进了二进制流——35 个操作码，filter、sort、select、take、distinct、count、reduce、group... 应有尽有。
 
@@ -172,13 +187,15 @@ auto result = exec.execute(playersList, queryBytes);
 
 **重点是：任何语言都可以当查询方，任何语言都可以当被查询方。Python 查 C++、TypeScript 查 Go、Java 查 Rust... 统统可以，全程只传二进制指令和结果，不需要共享内存，不需要序列化整个对象图。**
 
-**这就是路径 C1：跨语言 SPOI 实时查询——内存即数据库，直接查，比 NoSQL 还快。**
+顺便说一句：还记得青铜段位里运营同学要查上个月充值记录的事吗？SPOI 适合查内存里的实时数据（在线玩家、排行榜、当前房间状态），要查跨时间范围的历史数据、多表联查、聚合统计，还是用 ORM 自动生成 SQL 把数据同步到 MySQL 更方便——两个工具各有所长，配合着用就行。
+
+**跨语言 SPOI 实时查询——内存即数据库，直接查，比 NoSQL 还快。**
 
 > 完整代码见 `examples/08-spoi-cross-lang/` 和 `examples/09-spoi-cross-lang-all/`
 
 ---
 
-### 第四周：不想全量同步，想要字段级增量更新
+### 铂金段位：字段改了一点点，没必要传整个对象吧？
 
 玩家捡了一把剑，血量+10，名字改成了"Bob"... 你真的需要把整个 `Player` 对象重新发一遍吗？
 
@@ -190,11 +207,11 @@ auto result = exec.execute(playersList, queryBytes);
 - 血量加了 → ADD health = 10
 - 背包多了东西 → APPEND items = "sword"
 
-但是手写这些增量指令？又回到了第一天的烦恼——每个字段都要手写，漏了就是 Bug。
+但是手写这些增量指令？又回到了青铜段位的烦恼——每个字段都要手写，漏了就是 Bug。
 
 ---
 
-### Shadow 模式：像操作普通对象一样写代码，自动生成增量指令
+### 获得新技能：Shadow 模式——像操作普通对象一样写代码，自动生成增量指令
 
 C++ 端：
 
@@ -204,20 +221,41 @@ C++ 端：
 std::stringstream deltaStream;
 auto shadow = sp::spoi(player, deltaStream);  // 套个代理
 
-shadow.name = "Bob";              // ✅ 自动记录 SET name
-shadow.health += 10;              // ✅ 自动记录 ADD health
-shadow.items.append("sword");     // ✅ 自动记录 APPEND items
+shadow.name = "Bob";              // 自动记录 SET name
+shadow.health += 10;              // 自动记录 ADD health
+shadow.items.append("sword");     // 自动记录 APPEND items
 // shadow 析构时，所有增量指令自动写入 deltaStream
 // 把 deltaStream 发给其他客户端，对方应用同样的增量即可
 ```
 
-跨语言也一样——Python/TS/Go 端用 `SpoiUpdate` builder 构建更新指令，发给 C++ 执行，字段级增量更新，带宽占用极小。
+跨语言也一样——Python/TS/Go 端用 `SpoiUpdate` builder 构建更新指令，发给 C++ 执行，字段级增量更新，带宽占用极小。你以为这就完了？
 
-**这就是路径 C2：SPOI 增量更新——只传变化的部分，实时同步零压力。**
+直到某天半夜三点，你被运维的电话吵醒：机房跳闸，服务器断电重启了。
+
+你赶紧登上去一看——坏了，上次全量存盘是凌晨零点，现在三点，这三个小时的玩家数据全丢了。论坛上已经炸锅，充了几万块的大佬回档到三小时前，骂声一片。全量存盘太慢了，10 万玩家序列化一次要好几秒，你总不能每分钟全量存一次吧，卡得玩家动都动不了。
+
+但是用增量更新就简单了：
+- 启动时先做一次全量序列化，写入 `snapshot.bin`（基准快照）
+- 运行中所有数据变更产生的增量指令，直接 append-only 追加写入 `delta.bin`
+- 追加是顺序写，极快，几乎不影响游戏帧率
+- 断电重启后，先读 `snapshot.bin` 恢复基准，再依次重放 `delta.bin` 里的增量——最多只丢最后几条没刷盘的，几毫秒的数据，玩家根本感知不到
+- 每隔几个小时做一次新的全量快照，清空旧的增量文件，控制大小
+
+这不就是工业界最经典的 WAL 预写日志模式嘛，StreamPunk 的增量更新天然就是干这个的，几行代码就搞定了断电安全。
+
+你以为踩完这个坑就没事了？过了俩月，更糟的事发生了：服务器被黑客入侵，拖走了硬盘上所有数据。
+
+你吓得一身冷汗——玩家数据要是泄露了，这游戏就别开了。结果等安全团队分析完，你松了一口气：黑客拖走的是 `delta.bin`，里面全是 `ADD health = +30`、`SET name = "Bob"`、`APPEND items = "sword"` 这样的相对操作，根本没有任何绝对值。
+
+原来你早就听了建议，把全量快照 `snapshot.bin` 加密后备份在离线存储服务器上，线上机器只留了增量日志。**没有最初的全量基准数据，就算拿到了所有增量，也根本还原不出任何玩家的真实状态。**血量原本是 10 还是 100？不知道。名字原来是什么？不知道。背包里原本有什么？不知道。一堆 `+30`、`-5` 没有任何意义。
+
+增量更新天然只存变化量，相当于自带了一层"差分加密"——不需要你对增量本身做复杂加密，靠数据格式本身就保护了敏感信息。
+
+**SPOI 增量更新——不只是省带宽，断电不丢数据，被拖库也不怕。**
 
 ---
 
-### 第五周：类型天天改，不想每次都重编译所有客户端
+### 钻石段位：开发阶段类型天天改，能不能不每次重编译？
 
 前面说的都很好，但有个问题：开发阶段类型天天加字段、改结构，每次改完 C++ 都要重跑 sp-gen，然后 Python/TS/Go 客户端全都要重新拉代码、重新编译、重新部署——策划同学在旁边等得不耐烦了："我就加个测试字段，能不能快点？"
 
@@ -225,7 +263,7 @@ OK，满足你。
 
 ---
 
-### 动态 Schema 模式：类型不用预生成，运行时自动适配
+### 获得新技能：动态 Schema 模式——类型不用预生成，运行时自动适配
 
 C++ 端：
 ```cpp
@@ -241,14 +279,14 @@ obj = reader.read_any()  # 直接读出对象，自动适配新字段
 print(obj.name, obj.level, obj.new_field)  # 新字段自动有了
 ```
 
-| 场景 | 预生成模式（路径B） | 动态 Schema 模式（路径D） |
-|------|---------------------|---------------------------|
+| 场景 | 预生成代码模式 | 动态 Schema 模式 |
+|------|----------------|-----------------|
 | C++ 加字段 | 重跑 sp-gen，重编译客户端 | 重发 Schema，自动适配 |
-| 类型安全 | ✅ 编译期检查 | ⚠️ 运行时检查 |
-| 性能 | ✅ 最优 | ⚠️ 稍慢（可接受） |
+| 类型安全 | 编译期检查 | 运行时检查 |
+| 性能 | 最优 | 稍慢（可接受） |
 | 适合阶段 | 生产环境，类型稳定 | 开发调试，快速迭代 |
 
-**这就是路径 D：动态 Schema——开发阶段怎么快怎么来，上线了再切回预生成模式保安全。**
+**动态 Schema——开发阶段怎么快怎么来，上线了再切回预生成模式保安全。**
 
 > 完整代码见 `examples/03-dynamic-schema/`
 
@@ -256,27 +294,31 @@ print(obj.name, obj.level, obj.new_field)  # 新字段自动有了
 
 ## 所以，StreamPunk 到底是什么？
 
-一句话总结：
-
-> **你只需要用 C++ 定义好数据类型，剩下的——序列化、JSON、深拷贝、ORM、多语言类型同步、跨语言内存查询、字段级增量更新——StreamPunk 全包了。**
+用了 StreamPunk，你只需要用 C++ 定义好数据类型。
+剩下的——序列化、JSON、深拷贝、ORM、多语言类型同步、跨语言内存查询、字段级增量更新——StreamPunk 全包了。
 
 从简单到复杂，按需使用：
 
-| 你想... | 用什么 | 难度 |
-|---------|--------|:----:|
-| C++ 里序列化/JSON/深拷贝不想手写 | 路径 A：继承 Base + UseData | ⭐ |
-| C++ 类型要给 Python/TS/Go 用，不想手写多份 | 路径 B：sp-gen 自动生成 7 语言代码 | ⭐⭐ |
-| 多语言程序之间想实时查对方内存数据 | 路径 C1：SPOI 查询协议 | ⭐⭐⭐ |
-| 实时状态同步，不想传全量对象 | 路径 C2：SPOI Shadow 增量更新 | ⭐⭐⭐ |
-| 开发阶段类型天天改，懒得每次重生成 | 路径 D：动态 Schema 运行时适配 | ⭐⭐ |
+| 你想... | 怎么做 | 难度 |
+|---------|-------|:----:|
+| C++ 里序列化/JSON/深拷贝不想手写 | 继承 `Base` + `UseData`，一个宏搞定 | 简单 |
+| 实时查内存用 SPOI，复杂历史数据落库用 ORM | 自动生成 SQL，同步到 MySQL，两个工具配合用 | 简单 |
+| C++ 类型要给 Python/TS/Go 用，不想手写多份 | `sp-gen` 自动生成 7 语言代码 | 中等 |
+| 多语言程序之间想实时查对方内存数据 | SPOI 查询协议，二进制发指令 | 较难 |
+| 省带宽 + 断电不丢数据 + 被拖库也不怕 | SPOI Shadow 增量更新 + WAL 持久化 + 差分加密 | 较难 |
+| 开发阶段类型天天改，懒得每次重生成 | 动态 Schema 运行时自动适配 | 中等 |
 
 **适用场景**：游戏服务端、实时协作工具、IoT 数据交换、微服务跨语言通信——任何需要 C++ 定义数据模型、多语言客户端实时同步的场景。
 
 ---
 
-> **AI 开箱即用**：本项目包含 12 个 AI Skill 文档，覆盖类型定义、代码生成、SPOI 查询和各语言集成。使用支持 Skill 机制的 AI 编程助手（如 Cursor、Trae）时，AI 会自动加载这些 Skill，无需查阅文档即可正确编写 StreamPunk 代码。[详见 AI 辅助开发](#ai-辅助开发)
+> **AI 开箱即用**：
+本项目包含 14 个 AI Skill 文档，覆盖类型定义、代码生成、SPOI 查询和各语言集成。
+使用支持 Skill 机制的 AI 编程助手（如 Cursor、Trae）时，AI 会自动加载这些 Skill，无需查阅文档即可正确编写 StreamPunk 代码。
+[详见 AI 辅助开发](#ai-辅助开发)
 
-**核心能力一览**：内存直接 SPOI 查询 · 增量更新持久化 · 二进制序列化 · JSON 互转 · 深拷贝 · ORM SQL 生成
+> **核心能力一览**：
+内存直接 SPOI 查询 · 增量更新持久化 · 二进制序列化 · JSON 互转 · 深拷贝 · ORM SQL 生成
 
 ---
 
@@ -288,12 +330,12 @@ print(obj.name, obj.level, obj.new_field)  # 新字段自动有了
 - [快速开始](#快速开始)
 - [项目结构](#项目结构)
 - [AI 辅助开发](#ai-辅助开发)
-- [三条使用路径，按需选择](#三条使用路径按需选择)
-  - [路径 A：纯 C++ 项目](#路径-a纯-c-项目)
-  - [路径 B：C++ ↔ 跨语言（预生成代码模式）](#路径-bc-跨语言预生成代码模式)
-  - [路径 C1：跨语言 SPOI 查询](#路径-c1跨语言-spoi-查询)
-  - [路径 C2：SPOI 增量更新（Shadow 模式）](#路径-c2spoi-增量更新shadow-模式)
-  - [路径 D：动态 Schema 解析](#路径-d动态-schema-解析高级功能)
+- [使用方式详解](#使用方式详解)
+  - [纯 C++ 项目](#纯-c-项目)
+  - [C++ 跨语言（预生成代码模式）](#c-跨语言预生成代码模式)
+  - [跨语言 SPOI 查询](#跨语言-spoi-查询)
+  - [SPOI 增量更新（Shadow 模式）](#spoi-增量更新shadow-模式)
+  - [动态 Schema 解析（高级功能）](#动态-schema-解析高级功能)
 - [sp-gen 统一命令](#sp-gen-统一命令)
 - [编译要求](#编译要求)
 - [注意事项](#注意事项)
@@ -306,12 +348,12 @@ print(obj.name, obj.level, obj.new_field)  # 新字段自动有了
 
 | 能力 | 说明 | 适用场景 |
 |------|------|---------|
-| **跨语言 SPOI 查询** | 任何语言构建查询指令，发送给其他语言执行并返回结果 | 多个跨语言程序互相查询 |
-| **ORM SQL 生成** | 从 C++ 类型自动生成 CREATE/INSERT/UPDATE 语句 | 数据库建表与 CRUD |
-| **跨语言增量更新** | 通过 SPOI 指令进行字段级 SET/ADD/APPEND/REMOVE | 游戏状态同步、实时协作编辑 |
+| **跨语言 SPOI 查询** | 任何语言构建查询指令，发送给其他语言执行并返回结果；内存直查，比 SQL 快 | 多语言程序互相实时查询、简单过滤/排序/聚合、实时排行榜 |
+| **ORM SQL 生成** | 从 C++ 类型自动生成 CREATE/INSERT/UPDATE 语句；和 SPOI 配合，实时数据内存查，历史数据落库查 | 复杂联表查询、历史数据分析、充值流水统计、需要落盘到 MySQL/SQLite |
+| **跨语言增量更新** | 字段级 SET/ADD/APPEND/REMOVE；全量快照+增量追加实现 WAL 断电安全；增量只存相对值天然差分加密 | 游戏状态同步、实时协作编辑、实时数据持久化、防数据泄露 |
 | **JSON 支持** | C++ 类型自动生成 toJson/fromJson | 调试、日志、与 REST API 对接 |
-| **二进制序列化** | 紧凑的小端序二进制格式，各语言互通 | 网络传输、持久化存储 |
-| **深拷贝** | 自动追踪对象引用，避免重复拷贝 | 快照、状态回滚 |
+| **二进制序列化** | 紧凑的小端序二进制格式，各语言互通 | 网络传输、持久化全量快照 |
+| **深拷贝** | 自动追踪对象引用，避免循环引用和重复拷贝 | 快照、状态回滚 |
 
 ---
 
@@ -419,7 +461,7 @@ int main() {
 | `include/stream-punk/` | Header-only 核心库，复制到你的 C++ 项目即可用 |
 | `tools/sp-gen/` | 统一代码生成器（跨语言），读取元数据 .bin 生成各语言代码 |
 | `runtimes/` | 各语言运行时文件，手动复制到目标项目 |
-| `skills/` | AI 辅助技能文档——共 12 个 `SKILL.md`，覆盖 C++ 类型定义、sp-gen、SPOI、7 种语言集成 |
+| `skills/` | AI 辅助技能文档——共 14 个 `SKILL.md`，覆盖 C++ 类型定义、sp-gen、SPOI、7 种语言集成 |
 | `examples/` | 10 个场景示例，从纯 C++ 序列化到 8 语言全量集成测试 |
 | `scripts/` | `setup.ps1` 一键安装，`run-all.ps1` 一键跑所有示例 |
 
@@ -427,7 +469,7 @@ int main() {
 
 ## AI 辅助开发
 
-`skills/` 目录下包含 **12 个 AI Skill 文档**（`SKILL.md`），每个覆盖 StreamPunk 的一个核心模块。使用支持 Skill 机制的 AI 编程助手时，这些 Skill 会被自动加载，帮助 AI 准确地理解和使用 StreamPunk。
+`skills/` 目录下包含 **14 个 AI Skill 文档**（`SKILL.md`），每个覆盖 StreamPunk 的一个核心模块。使用支持 Skill 机制的 AI 编程助手时，这些 Skill 会被自动加载，帮助 AI 准确地理解和使用 StreamPunk。
 
 > 如果你使用 **Cursor**、**Trae** 或其它支持 Skill 的 AI 编程助手，打开本项目后，AI 即可自动识别这些 Skill。无需手动查阅文档，直接描述需求，AI 就能生成正确的代码。
 
@@ -448,17 +490,17 @@ int main() {
 
 ---
 
-## 三条使用路径，按需选择
+## 使用方式详解
 
-| 路径 | 适合场景 | 一句话 |
-|:----:|----------|--------|
-| [A](#路径-a纯-c-项目) | 纯 C++ 序列化 | 继承 `Base`，`UseData` 宏，完事 |
-| [B](#路径-bc-跨语言预生成代码模式) | C++ 服务端 + 多语言客户端 | 跑 sp-gen，自动生成各语言代码 |
-| [C1](#路径-c1跨语言-spoi-查询) | 跨语言实时查询 | 构建 SPOI 指令，发二进制流过去查 |
-| [C2](#路径-c2spoi-增量更新shadow-模式) | 字段级增量更新 | Shadow 代理，自动生成 SET/ADD/APPEND |
-| [D](#路径-d动态-schema-解析高级功能) | 类型频繁变化 | 发 Schema JSON，运行时动态适配 |
+| 适合场景 | 一句话 |
+|----------|--------|
+| 纯 C++ 序列化 | 继承 `Base`，`UseData` 宏，完事 |
+| C++ 服务端 + 多语言客户端 | 跑 sp-gen，自动生成各语言代码 |
+| 跨语言实时查询 | 构建 SPOI 指令，发二进制流过去查 |
+| 字段级增量更新 | Shadow 代理，自动生成 SET/ADD/APPEND |
+| 类型频繁变化 | 发 Schema JSON，运行时动态适配 |
 
-### 路径 A：纯 C++ 项目
+### 纯 C++ 项目
 
 适合：只需要序列化、JSON、深拷贝的 C++ 项目。
 
@@ -496,7 +538,7 @@ int main() {
 
 > 完整代码见 `examples/01-basic-cpp/`
 
-### 路径 B：C++ ↔ 跨语言（预生成代码模式）
+### C++ 跨语言（预生成代码模式）
 
 适合：C++ 服务端 + 其他语言客户端，类型固定，享受编译期类型安全。
 
@@ -536,7 +578,7 @@ int main() {
 | `optional<T>` | T \| null | Optional[T] | T (nullable) | *T | Option\<T\> | T? |
 
 
-### 路径 C1：跨语言 SPOI 查询
+### 跨语言 SPOI 查询
 
 适合：**需要多语言之间实时、动态地互相查询数据**的场景。
 
@@ -584,7 +626,7 @@ result = executor.execute(players, instruction_bytes)  # 执行任意语言发�
 
 > 完整代码见 `examples/08-spoi-cross-lang/` 和 `examples/09-spoi-cross-lang-all/`
 
-### 路径 C2：SPOI 增量更新（Shadow 模式）
+### SPOI 增量更新（Shadow 模式）
 
 适合：**需要字段级增量更新，而非全量序列化**的场景。
 
@@ -606,7 +648,7 @@ shadow.items.append("sword"); // 容器追加 → 自动缓冲 APPEND 指令
 
 > 完整代码见 `examples/08-spoi-cross-lang/`
 
-### 路径 D：动态 Schema 解析（高级功能）
+### 动态 Schema 解析（高级功能）
 
 适合：类型频繁变化、对接第三方系统、不想维护生成代码。
 
@@ -615,8 +657,8 @@ C++ 端：buildAllSchemas() → 发送 Schema JSON → 客户端用通用解析�
 Python 端：registry.load_schema(json) → reader.read_any() → 直接使用
 ```
 
-| 场景 | 预生成模式 | 动态 Schema 模式 |
-|------|-----------|-----------------|
+| 场景 | 预生成代码模式 | 动态 Schema 模式 |
+|------|----------------|-----------------|
 | C++ 新增字段 | 重跑 sp-gen，重新编译客户端 | 重发 Schema，自动适配 |
 | 对接未知 IoT 设备 | 需要头文件 → 重新生成 | 收到 Schema 即可 |
 | 类型安全 | 编译期 | 运行时 |

@@ -76,21 +76,7 @@ int main() {
 
 序列化、JSON、深拷贝都搞定了，你美滋滋地跑了一个星期。
 
-直到运营同学找过来："帮我查一下上个月所有充值超过100块、等级在30级以上、并且上周登录过的玩家，按充值金额排序，导出成 Excel。"
-
-你懵了。SPOI 内存查询确实快，查在线玩家、查实时排行榜没问题，但这种跨时间范围、多表联查、聚合统计的需求，还是 SQL 更擅长啊。总不能把所有历史数据都塞在内存里吧？
-
-这时候你想起了 StreamPunk 还自带 ORM：
-
-```cpp
-    // ORM（自动生成 SQL 建表和 CRUD 语句）
-    // 内存里实时操作用 SPOI，需要复杂查询、历史统计的时候，
-    // 自动生成 SQL 把数据同步到 MySQL，想怎么查就怎么查
-    // Player::sqlCreateTable();    // 自动建表
-    // Player::sqlInsert(p);        // 自动生成 INSERT
-```
-
-**纯 C++ 项目，五分钟上手，序列化/JSON/深拷贝/ORM 全给你自动搞定。**
+**纯 C++ 项目，五分钟上手，StreamPunk 全给你自动搞定。**
 
 > 完整代码见 `examples/01-basic-cpp/`
 
@@ -109,9 +95,9 @@ int main() {
 
 ---
 
-### 获得新技能：一条命令，七语言自动同步类型
+### 获得新技能：一条命令，七门编程语言，自动同步类型！
 
-C++ 端定义好类型后，**只需两步**：
+C++ 这边定义好类型后，**只需两步**：
 
 ```bash
 # 1. 编译运行元数据提取器 → 生成类型信息文件
@@ -129,11 +115,12 @@ p = Player(name="Alice", level=42, health=88.5, items=["sword", "shield"])
 print(p.to_json())  # 同样支持 JSON
 ```
 
-**支持的语言：** ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat&logo=python&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white) ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat&logo=go&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000000?style=flat&logo=rust&logoColor=white) ![Java](https://img.shields.io/badge/-Java-ED8B00?style=flat&logo=openjdk&logoColor=white) ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white) **——一条命令，全部自动生成。**
+**支持的语言：**
+![Python](https://img.shields.io/badge/-Python-3776AB?style=flat&logo=python&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white) ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat&logo=go&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000000?style=flat&logo=rust&logoColor=white) ![Java](https://img.shields.io/badge/-Java-ED8B00?style=flat&logo=openjdk&logoColor=white) ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white) 
 
 改了 C++ 类型？重跑 `sp-gen`，所有语言自动同步——哪漏改了编译直接报错，不会等到运行时才出问题。
 
-**C++ 服务端 + 多语言客户端，类型定义一份维护，全语言自动同步。**
+**用法举例：C++ 服务端 + 多语言客户端，类型定义一份维护，全语言自动同步。**
 
 ---
 
@@ -146,13 +133,13 @@ print(p.to_json())  # 同样支持 JSON
 - 只需要 5 个结果，却要传 10 万个对象的全量数据？
 - 而且 C++ 内存里明明已经有这些数据了，为什么不能直接在那边查完只返回结果？
 
-你可能会想："要是能像查数据库一样查内存里的对象就好了——`SELECT name FROM players WHERE level > 10 ORDER BY score DESC LIMIT 5`，直接发查询语句过去，对方查完返回结果就行。"
+你可能会想："要是能像查数据库一样，查内存里的对象就好了，直接发查询请求过去，对方查完返回结果就行。"
 
-**好消息：StreamPunk 就是这么干的。**
+**这就是 StreamPunk 的内存查询功能——SPOI。**
 
 ---
 
-### 获得新技能：SPOI——把 SQL 查询装进二进制协议，直接查内存
+### 获得新技能：SPOI——二进制查询协议，直接查内存
 
 SPOI（StreamPunk Operation Instruction）是 StreamPunk 的查询协议，相当于把 C++20 的 `<ranges>` 操作装进了二进制流——35 个操作码，filter、sort、select、take、distinct、count、reduce、group... 应有尽有。
 
@@ -187,11 +174,27 @@ auto result = exec.execute(playersList, queryBytes);
 
 **重点是：任何语言都可以当查询方，任何语言都可以当被查询方。Python 查 C++、TypeScript 查 Go、Java 查 Rust... 统统可以，全程只传二进制指令和结果，不需要共享内存，不需要序列化整个对象图。**
 
-顺便说一句：还记得青铜段位里运营同学要查上个月充值记录的事吗？SPOI 适合查内存里的实时数据（在线玩家、排行榜、当前房间状态），要查跨时间范围的历史数据、多表联查、聚合统计，还是用 ORM 自动生成 SQL 把数据同步到 MySQL 更方便——两个工具各有所长，配合着用就行。
+但 SPOI 也不是万能的。假设运营同学找过来："帮我查一下上个月所有充值超过100块、等级在30级以上、并且上周登录过的玩家，按充值金额排序，导出成 Excel。"
+
+你又懵了：这种跨时间范围、多表联查、聚合统计的需求，总不能把所有历史数据都塞在内存里吧？还是 SQL 更擅长。
+
+这时候 StreamPunk 还自带 ORM——自动生成 SQL 建表和 CRUD 语句，把数据同步到 MySQL，想怎么查就怎么查：
+
+```cpp
+    // ORM（自动生成 SQL 建表和 CRUD 语句）
+    // 内存里实时操作用 SPOI，需要复杂查询、历史统计的时候，
+    // 自动生成 SQL 把数据同步到 MySQL，想怎么查就怎么查
+    Player::sqlCreateTable();    // 自动建表
+    Player::sqlInsert(p);        // 自动生成 INSERT
+```
+
+SPOI 适合查内存里的实时数据（在线玩家、排行榜、当前房间状态），ORM 适合查跨时间范围的历史数据——两个工具各有所长，配合着用就行。
 
 **跨语言 SPOI 实时查询——内存即数据库，直接查，比 NoSQL 还快。**
 
-> 完整代码见 `examples/08-spoi-cross-lang/` 和 `examples/09-spoi-cross-lang-all/`
+> 完整代码见
+ `examples/08-spoi-cross-lang/` 
+ `examples/09-spoi-cross-lang-all/`
 
 ---
 
@@ -228,7 +231,12 @@ shadow.items.append("sword");     // 自动记录 APPEND items
 // 把 deltaStream 发给其他客户端，对方应用同样的增量即可
 ```
 
-跨语言也一样——Python/TS/Go 端用 `SpoiUpdate` builder 构建更新指令，发给 C++ 执行，字段级增量更新，带宽占用极小。你以为这就完了？
+跨语言也一样——Python/TS/Go 端用 `SpoiUpdate` builder 构建更新指令，发给 C++ 执行，字段级增量更新，带宽占用极小。
+
+
+
+---
+你以为这就完了？
 
 直到某天半夜三点，你被运维的电话吵醒：机房跳闸，服务器断电重启了。
 
@@ -243,7 +251,9 @@ shadow.items.append("sword");     // 自动记录 APPEND items
 
 这不就是工业界最经典的 WAL 预写日志模式嘛，StreamPunk 的增量更新天然就是干这个的，几行代码就搞定了断电安全。
 
-你以为踩完这个坑就没事了？过了俩月，更糟的事发生了：服务器被黑客入侵，拖走了硬盘上所有数据。
+---
+别以为踩完这个坑就没事了。
+过了俩月，更糟的事发生了：服务器被黑客入侵，拖走了硬盘上所有数据。
 
 你吓得一身冷汗——玩家数据要是泄露了，这游戏就别开了。结果等安全团队分析完，你松了一口气：黑客拖走的是 `delta.bin`，里面全是 `ADD health = +30`、`SET name = "Bob"`、`APPEND items = "sword"` 这样的相对操作，根本没有任何绝对值。
 

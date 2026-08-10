@@ -4,7 +4,7 @@
 
 ---
 
-<video src="examples/12-gomoku/show/show_gomoku.mp4" controls width="100%"></video>
+[![五子棋双人对战演示](https://img.shields.io/badge/%F0%9F%8E%AC-%E7%82%B9%E5%87%BB%E8%A7%82%E7%9C%8B%E6%BC%94%E7%A4%BA%E8%A7%86%E9%A2%91-blue?style=for-the-badge)](examples/12-gomoku/show/show_gomoku.mp4)
 
 > 五子棋双人对战，C++ 服务端 + React 前端，StreamPunk 二进制序列化实时同步 —— 总共不到 400 行代码。
 > 等你看完本文，这种小程序不过是顺手的事。

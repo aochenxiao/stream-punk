@@ -48,6 +48,7 @@ option(BUILD_TEST_SPOI_SHADOW "Build SPOI shadow tests" ${BUILD_TESTS})
 option(BUILD_TEST_CROSS_LANG "Build cross-language tests" ${BUILD_TESTS})
 option(BUILD_TEST_SPOI "Build SPOI tests" ${BUILD_TESTS})
 option(BUILD_TEST_ORM "Build ORM integration tests" OFF)
+option(BUILD_SP26_REFLECTION "Build C++26 reflection version (requires GCC 16+)" OFF)
 
 # ============================================================
 # 第三方依赖（vcpkg manifest 模式）
@@ -465,7 +466,53 @@ if(BUILD_TESTS OR BUILD_TEST_CORE OR BUILD_TEST_JSON OR BUILD_TEST_SCHEMA
 endif()
 
 # ============================================================
-# examples — 7 个场景示例
+# C++26 反射版本 — 测试（仅 GCC 16+ 支持 -freflection）
+# 测试目标均以 sp26- 前缀命名，与旧版 test- 前缀区分
+# ============================================================
+if(BUILD_SP26_REFLECTION)
+    # 宏：创建 sp26 测试目标（独立可执行文件，不使用 doctest）
+    macro(add_sp26_test TARGET_NAME)
+        add_executable(${TARGET_NAME} ${ARGN})
+        target_include_directories(${TARGET_NAME} PRIVATE
+            ${CMAKE_SOURCE_DIR}/include
+            ${CMAKE_SOURCE_DIR}/examples
+        )
+        target_compile_features(${TARGET_NAME} PRIVATE cxx_std_26)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(${TARGET_NAME} PRIVATE -freflection)
+        endif()
+        add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
+    endmacro()
+
+    add_sp26_test(test-sp26-serialization
+        test/test_sp26_serialization.cpp
+    )
+    add_sp26_test(test-sp26-containers
+        test/test_sp26_containers.cpp
+    )
+    add_sp26_test(test-sp26-advanced
+        test/test_sp26_advanced.cpp
+    )
+    add_sp26_test(test-sp26-custom-types
+        test/test_sp26_custom_types.cpp
+    )
+    add_sp26_test(test-sp26-quick
+        test/test_sp26_quick.cpp
+    )
+
+    # 便利目标
+    add_custom_target(all-sp26-tests)
+    add_dependencies(all-sp26-tests
+        test-sp26-serialization
+        test-sp26-containers
+        test-sp26-advanced
+        test-sp26-custom-types
+        test-sp26-quick
+    )
+endif()
+
+# ============================================================
+# examples — 场景示例
 # ============================================================
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/01-basic-cpp)
@@ -479,8 +526,18 @@ if(BUILD_EXAMPLES)
     add_subdirectory(examples/09-spoi-cross-lang-all)
     add_subdirectory(examples/10-game)
     add_subdirectory(examples/11-pod-demo)
+    add_subdirectory(examples/12-gomoku/server)
     add_subdirectory(examples/14-tank-battle)
     add_subdirectory(examples/15-restaurant/server)
+    add_subdirectory(examples/17-wal-persistence)
+    add_subdirectory(examples/18-iot-sensor)
+    add_subdirectory(examples/19-leaderboard)
+    add_subdirectory(examples/20-microservice-mesh)
+endif()
+
+# C++26 反射版示例（仅当 BUILD_SP26_REFLECTION=ON 时构建）
+if(BUILD_EXAMPLES AND BUILD_SP26_REFLECTION)
+    add_subdirectory(examples/26-reflection)
 endif()
 
 # ============================================================

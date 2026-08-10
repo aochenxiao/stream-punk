@@ -380,7 +380,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     
     auto ws_thread = std::thread([]() {
-        app().addListener("127.0.0.1", 12345).run();
+        app().addListener("0.0.0.0", 12345).run();
     });
 
     std::wcout << L"========================================" << std::endl;

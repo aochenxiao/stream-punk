@@ -1,6 +1,13 @@
-# StreamPunk（流水账）— 跨语言实时数据查询与序列化框架
+# StreamPunk（狂流）— 跨语言实时数据查询与序列化框架
 
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20) [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]() [![Skills](https://img.shields.io/badge/AI_Skills-14个-ff69b4)](./skills/)
+
+---
+
+<video src="examples/12-gomoku/show/show_gomoku.mp4" controls width="100%"></video>
+
+> 五子棋双人对战，C++ 服务端 + React 前端，StreamPunk 二进制序列化实时同步 —— 总共不到 400 行代码。
+> 等你看完本文，这种小程序不过是顺手的事。
 
 ---
 
@@ -73,12 +80,54 @@ int main() {
     deepCopy(c, p3, p); c.clear();
 }
 ```
-
 序列化、JSON、深拷贝都搞定了，你美滋滋地跑了一个星期。
 
 **纯 C++ 项目，五分钟上手，StreamPunk 全给你自动搞定。**
 
-> 完整代码见 `examples/01-basic-cpp/`
+完整代码见 `examples/01-basic-cpp/`
+
+
+
+> **关于宏和 Base 继承的说明**
+>
+> 你可能会想："宏？好脏。继承 Base？有侵入性。"——我非常理解。
+>
+> 这是在 **C++20** 标准下的务实工程选择：通过 X 宏在编译期自动生成序列化、JSON、深拷贝的全部样板代码，零运行时开销。
+>
+> C++26 将引入 **静态反射（static reflection）**，届时可以直接写：
+>
+>     struct Player {
+>         std::string name;
+>         int32_t level = 1;
+>         double health = 100.0;
+>         std::vector<std::string> items;
+>     };
+>
+> 使用方式完全不变：
+>
+>     Player p{"Alice", 42, 88.5, {"sword", "shield"}};
+>     std::stringstream ss;
+>     O{ss} << p;
+>     Player p2; I{ss} >> p2;
+>     std::cout << p.toJson() << std::endl;
+>
+> **现状：**
+> 截至 2026 年，C++26 静态反射仅在 **GCC 16+** 中有实验性实现，**Clang 22.1.8** 以及 **MSVC 2026** 尚未落地。
+> 我个人预计 **2029 年之前** 整个 C++ 生态都将处于过渡阶段。
+> StreamPunk 当前方案是这个过渡期的最佳选择。
+> 我正在积极推进基于反射的零侵入实现。
+>
+> #### 如何体验（需要 WSL2 + GCC 16）
+> 通过 CMake：
+> ```bash
+> cmake -DBUILD_SP26_REFLECTION=ON -DBUILD_EXAMPLES=ON ..
+> cmake --build . --target all-sp26-tests
+> cmake --build . --target sp26-example
+> ```
+>
+> **核心设计：** 零宏（无 `UseData`/`DH`）、零侵入（无 `Base` 继承）、二进制兼容现有 StreamPunk 格式。
+> 类型注册从几十行宏缩减为一行 `SP_REFLECT(Name, member1, member2, ...)`，等 GCC `nonstatic_data_members_of` 修复后这一行也将移除。
+
 
 ---
 
@@ -472,7 +521,7 @@ int main() {
 | `tools/sp-gen/` | 统一代码生成器（跨语言），读取元数据 .bin 生成各语言代码 |
 | `runtimes/` | 各语言运行时文件，手动复制到目标项目 |
 | `skills/` | AI 辅助技能文档——共 14 个 `SKILL.md`，覆盖 C++ 类型定义、sp-gen、SPOI、7 种语言集成 |
-| `examples/` | 10 个场景示例，从纯 C++ 序列化到 8 语言全量集成测试 |
+| `examples/` | 14 个场景示例，从纯 C++ 序列化到多语言微服务网格 |
 | `scripts/` | `setup.ps1` 一键安装，`run-all.ps1` 一键跑所有示例 |
 
 ---
@@ -754,6 +803,233 @@ TypeDesc<string>::v    = {50, ...}           ← 编译期 SpToken 数组
 ```
 
 **整个流程由 C++ 编译器保证正确性**——编译通过，元数据就正确；编译报错，类型定义就有问题。无论用户写的类型定义有多复杂（模板嵌套、继承链、variant 等），都不会出现文本解析器那种解析错误。
+
+---
+
+## 运行示例
+
+StreamPunk 包含多个**前后端分离**的可视化示例，由 C++ WebSocket 服务端 + 前端 SPA 组成。
+
+### 前置要求
+
+- **C++ 编译器**：Visual Studio 2022（已安装 C++ 桌面开发工作负载）
+- **Node.js 18+**：前端开发服务器需要，从 [nodejs.org](https://nodejs.org/) 下载
+- **npm**：随 Node.js 一同安装，用于安装前端依赖
+
+### 编译服务端
+
+确保已执行 `.\scripts\setup.ps1` 安装依赖，然后：
+
+```bash
+# 在项目根目录执行
+cmake --build build --target stream-worms-server    # 示例 10：百战天虫
+cmake --build build --target whiteboard-server      # 示例 13：协同画板
+cmake --build build --target gomoku-server          # 示例 12：五子棋
+cmake --build build --target tank-battle-server     # 示例 14：坦克大战
+cmake --build build --target restaurant-server      # 示例 15：餐厅管理
+```
+
+或一次性编译所有示例：
+
+```bash
+cmake --build build
+```
+
+### 运行各示例
+
+每个示例均需**先启动 C++ 服务端，再启动前端**。需要两个终端窗口：
+
+| 终端 | 用途 |
+|:---:|------|
+| 终端 1 | 运行 C++ 服务端（保持运行，不要关闭） |
+| 终端 2 | 运行前端开发服务器，然后在浏览器中打开页面 |
+
+#### 示例 10：StreamWorms（百战天虫）
+
+3D 游戏，使用 Three.js 渲染，展示 StreamPunk 跨语言对象同步。
+
+```bash
+# ── 终端 1：启动服务端（端口 9999）──
+.\build\examples\10-game\Debug\stream-worms-server.exe
+
+# ── 终端 2：启动前端（端口 3000）──
+cd examples\10-game\client
+npm install         # 首次运行需要，安装依赖
+npm run dev
+# 浏览器打开 http://localhost:3000
+```
+
+> 多人测试：打开两个浏览器标签页，分别输入玩家名加入游戏，即可看到双方实时同步。
+
+#### 示例 12：五子棋
+
+双人五子棋对弈，展示 StreamPunk 二进制序列化实时同步。
+
+```bash
+# ── 终端 1：启动服务端（端口 9003）──
+.\build\examples\12-gomoku\server\Debug\gomoku-server.exe
+
+# ── 终端 2：启动前端（端口 5175）──
+cd examples\12-gomoku\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:5175
+```
+
+> 多人测试：打开两个浏览器标签页，分别点击"加入游戏"，即可开始对弈。
+
+#### 示例 13：协同画板
+
+多人实时白板，展示 SPOI Shadow 增量同步（笔画只传增量，不重发全量）。
+
+```bash
+# ── 终端 1：启动服务端（端口 9998）──
+.\build\examples\13-whiteboard\Debug\whiteboard-server.exe
+
+# ── 终端 2：启动前端（端口 5173）──
+cd examples\13-whiteboard\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:5173
+```
+
+> 多人测试：打开两个浏览器标签页，输入不同昵称加入同一房间，画板上可以看到双方的笔迹实时同步。
+
+#### 示例 14：坦克大战
+
+双人坦克对战，展示 StreamPunk 实时状态同步。
+
+```bash
+# ── 终端 1：启动服务端（端口 9002）──
+.\build\examples\14-tank-battle\server\Debug\tank-battle-server.exe
+
+# ── 终端 2：启动前端（端口 5174）──
+cd examples\14-tank-battle\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:5174
+```
+
+> 多人测试：打开两个浏览器标签页，分别点击"加入游戏"，用 WASD/方向键控制坦克移动，空格射击。
+
+#### 示例 15：餐厅管理系统
+
+多角色餐厅管理（老板、服务员、厨房、收银等），展示 StreamPunk 复杂业务状态同步。
+
+```bash
+# ── 终端 1：启动服务端（端口 9004）──
+.\build\examples\15-restaurant\server\Debug\restaurant-server.exe
+
+# ── 终端 2：启动前端（端口 5176）──
+cd examples\15-restaurant\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:5176
+```
+
+> 多人测试：打开多个浏览器标签页，分别选择不同角色（服务员、厨房、收银等）登录，观察各角色视图的实时联动。
+
+#### 示例 16：协作编辑器（需 ixwebsocket）
+
+多人实时文本协作编辑，展示 StreamPunk 增量更新。
+
+```bash
+# 需要先安装 ixwebsocket（vcpkg install ixwebsocket）
+cmake -S examples\16-collab-editor\server -B build\collab-editor-server
+cmake --build build\collab-editor-server
+
+# ── 终端 1：启动服务端（端口 9005）──
+.\build\collab-editor-server\Debug\collab-server.exe
+
+# ── 终端 2：启动前端（端口 5177）──
+cd examples\16-collab-editor\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:5177
+```
+
+> 多人测试：打开两个浏览器标签页，输入不同用户名加入，编辑文本可以看到对方的光标位置和内容实时同步。
+
+#### 示例 07：全栈演示（需 Drogon）
+
+Vue 3 + C++ 全栈，展示二进制数据流可视化和浮动光标实时同步。
+
+```bash
+# 需要先安装 Drogon 框架（vcpkg install drogon）
+cmake -S examples\07-full-stack\server -B build\full-stack-server
+cmake --build build\full-stack-server
+
+# ── 终端 1：启动服务端（端口 12345）──
+.\build\full-stack-server\Debug\WebSocketEchoServer.exe
+
+# ── 终端 2：启动前端（端口 9625）──
+cd examples\07-full-stack\client
+npm install
+npm run dev
+# 浏览器打开 http://localhost:9625
+```
+
+> **提示**：`07-full-stack` 需要 Drogon，`16-collab-editor` 需要 ixwebsocket，请先通过 vcpkg 安装相应依赖后再编译。
+
+### 控制台示例（无外部依赖）
+
+以下示例为纯 C++ 控制台程序，无需 Node.js 或外部库，编译即运行。
+
+#### 示例 17：WAL 持久化与断电恢复
+
+演示 StreamPunk 增量更新实现 WAL（预写日志）模式：全量快照 + 增量追加 → 断电恢复 → 差分加密。
+
+```bash
+# 编译
+cmake --build build --target example-17-wal-persistence
+
+# 运行
+.\build\examples\17-wal-persistence\Debug\example-17-wal-persistence.exe
+```
+
+> 展示功能：增量更新、快照持久化、WAL 恢复、差分安全
+
+#### 示例 18：IoT 传感器数据采集与分析
+
+模拟 IoT 传感器网关，展示二进制序列化（紧凑数据）、SPOI 查询（过滤异常）和动态 Schema（新传感器类型适配）。
+
+```bash
+# 编译
+cmake --build build --target example-18-iot-sensor
+
+# 运行
+.\build\examples\18-iot-sensor\Debug\example-18-iot-sensor.exe
+```
+
+> 展示功能：二进制序列化 vs JSON 对比、SPOI 查询、动态 Schema、跨语言生成
+
+#### 示例 19：实时排行榜系统
+
+游戏排行榜场景，展示 SPOI 查询（Top-N 排序、多条件过滤）和增量更新（分数变化只传增量）。
+
+```bash
+# 编译
+cmake --build build --target example-19-leaderboard
+
+# 运行
+.\build\examples\19-leaderboard\Debug\example-19-leaderboard.exe
+```
+
+> 展示功能：SPOI filter/sort/take/count、增量更新、跨语言数据交换
+
+#### 示例 20：多语言微服务网格
+
+模拟 C++ 认证服务 + Python 分析服务 + Go API 网关的微服务架构，展示跨语言 SPOI 互相查询。
+
+```bash
+# 编译
+cmake --build build --target example-20-microservice-mesh
+
+# 运行
+.\build\examples\20-microservice-mesh\Debug\example-20-microservice-mesh.exe
+```
+
+> 展示功能：跨语言 SPOI 互查、二进制协议、类型安全、微服务治理
 
 ---
 

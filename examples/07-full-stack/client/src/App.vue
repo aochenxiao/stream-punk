@@ -217,7 +217,7 @@ function toggleConnection() {
   connectWebSocket();
 }
 function connectWebSocket() {
-  ws = new WebSocket('ws://localhost:12345');
+  ws = new WebSocket(`ws://${window.location.hostname}:12345`);
   ws.binaryType = 'arraybuffer';
 
   ws.onopen = () => {

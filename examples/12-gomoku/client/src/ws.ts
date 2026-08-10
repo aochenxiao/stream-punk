@@ -103,6 +103,11 @@ export class GameWS {
     this.ws.send(msg.buffer);
   }
 
+  sendRestart(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(new Uint8Array([0x03]).buffer);
+  }
+
   disconnect(): void {
     this.ws?.close();
     this.ws = null;

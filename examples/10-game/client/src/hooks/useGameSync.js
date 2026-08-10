@@ -317,7 +317,7 @@ export function useGameSync() {
       wsRef.current.close()
     }
 
-    const ws = new WebSocket(`ws://localhost:9999`)
+    const ws = new WebSocket(`ws://${window.location.hostname}:9999`)
     ws.binaryType = 'arraybuffer'
     wsRef.current = ws
 

@@ -11,7 +11,7 @@ import BossView from './components/BossView';
 import CustomerView from './components/CustomerView';
 import WarehouseView from './components/WarehouseView';
 
-const WS_URL = 'ws://localhost:9004';
+const WS_URL = `ws://${window.location.hostname}:9004`;
 
 const ROLE_NAMES = ['老板','大堂经理','收银员','主厨','厨师','切配员','传菜员','服务员','仓库管理员','顾客'];
 

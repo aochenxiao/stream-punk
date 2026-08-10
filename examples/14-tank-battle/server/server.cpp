@@ -19,6 +19,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #include "../Data.hpp"
+#include <stream-punk/StreamPunkJson.hpp>
 using namespace sp;
 
 // ==================== 常量 ====================
@@ -368,7 +369,7 @@ int main() {
 
     listen(listenSock, SOMAXCONN);
     LOG("INIT", "=== Tank Battle Server ===");
-    LOG("INIT", "Listening on ws://localhost:9002");
+    LOG("INIT", "Listening on ws://0.0.0.0:9002");
     LOG("INIT", "========================");
 
     GameRoom room;

@@ -20,6 +20,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #include "../Data.hpp"
+#include <stream-punk/StreamPunkJson.hpp>
 using namespace sp;
 
 // ==================== 日志 ====================
@@ -388,7 +389,7 @@ int main() {
     sockaddr_in addr = {}; addr.sin_family = AF_INET; addr.sin_port = htons(9004); addr.sin_addr.s_addr = INADDR_ANY;
     bind(ls, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
     listen(ls, SOMAXCONN);
-    LOG("INIT", "=== Restaurant System ws://localhost:9004 ===");
+    LOG("INIT", "=== Restaurant System ws://0.0.0.0:9004 ===");
 
     RestaurantEngine eng; eng.initData();
     std::vector<SOCKET> pending;

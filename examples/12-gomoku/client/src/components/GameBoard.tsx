@@ -106,19 +106,24 @@ function drawBoard(ctx: CanvasRenderingContext2D, state: GameState | null, playe
     ctx.textAlign = 'center';
     const winnerLabel = state.winner === playerId ? '你赢了!' : `玩家${state.winner} 获胜`;
     ctx.fillText(winnerLabel, CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 10);
-    ctx.font = '16px sans-serif';
-    ctx.fillText('点击返回重新开始', CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 30);
   }
 }
 
 export default function GameBoard({ ws, playerId, onBack }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [restarting, setRestarting] = useState(false);
 
-  // 接收游戏状态
+  const handleRestart = useCallback(() => {
+    setRestarting(true);
+    ws.sendRestart();
+  }, [ws]);
+
+  // 接收游戏状态 — 服务端重置后会广播新的 GameState
   useEffect(() => {
     const onGameState = (state: GameState) => {
       setGameState(state);
+      if (state.winner === 0) setRestarting(false);
     };
     const onPlayerId = () => {};
     const onStatusChange = () => {};
@@ -188,6 +193,24 @@ export default function GameBoard({ ws, playerId, onBack }: Props) {
           {isBlack ? '黑子' : '白子'}
         </span>
         <span style={{ color: '#aaa' }}>{turnLabel}</span>
+        {gameState && gameState.winner !== 0 && (
+          <button
+            onClick={handleRestart}
+            disabled={restarting}
+            style={{
+              padding: '6px 16px',
+              background: '#e94560',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: restarting ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold',
+              opacity: restarting ? 0.6 : 1,
+            }}
+          >
+            {restarting ? '等待中...' : '再来一盘'}
+          </button>
+        )}
         <button
           onClick={onBack}
           style={{

@@ -39,7 +39,7 @@ export function useWhiteboardSync() {
   function connect(userName, roomId) {
     if (wsRef.current) wsRef.current.close()
 
-    const ws = new WebSocket('ws://localhost:9998')
+    const ws = new WebSocket(`ws://${window.location.hostname}:9998`)
     ws.binaryType = 'arraybuffer'
     wsRef.current = ws
 

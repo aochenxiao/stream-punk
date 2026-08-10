@@ -6,7 +6,7 @@ export default function Lobby({ onJoin }) {
     const [joined, setJoined] = useState(false);
     const handleJoin = useCallback(() => {
         setStatus('连接中...');
-        const wsUrl = 'ws://localhost:9002';
+        const wsUrl = `ws://${window.location.hostname}:9002`;
         const gameWs = new GameWS(wsUrl, {
             onGameState: () => { },
             onPlayerId: (pid) => {

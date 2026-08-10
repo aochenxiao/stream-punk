@@ -18,6 +18,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #include "../Data.hpp"
+#include <stream-punk/StreamPunkJson.hpp>
 using namespace sp;
 
 // ==================== 常量 ====================
@@ -39,7 +40,7 @@ inline std::string nowStr() {
 
 // ==================== WebSocket 帧协议 ====================
 enum class WsOpcode : u8 { Text = 0x1, Binary = 0x2, Close = 0x8, Ping = 0x9, Pong = 0xA };
-enum class MsgType : u8 { Move = 0x01, GameState = 0x02, PlayerId = 0x04 };
+enum class MsgType : u8 { Move = 0x01, GameState = 0x02, Restart = 0x03, PlayerId = 0x04 };
 
 std::vector<u8> makeWsFrame(WsOpcode opcode, const std::vector<u8>& payload) {
     std::vector<u8> frame;
@@ -220,8 +221,9 @@ struct GameRoom {
         clients.emplace_back(sock, pid);
         sendPlayerId(sock, pid);
 
-        if (pid == 1) state.player1Id = pid;
-        else if (pid == 2) state.player2Id = pid;
+        // 按加入顺序分配玩家角色（1=黑子, 2=白子）
+        if (clients.size() == 1) state.player1Id = pid;
+        else if (clients.size() == 2) state.player2Id = pid;
 
         LOG("JOIN", "Player %d joined (total: %zu)", pid, clients.size());
 
@@ -234,7 +236,7 @@ struct GameRoom {
 
     void resetGame() {
         state.stones.clear();
-        state.currentPlayer = 1;
+        state.currentPlayer = state.player1Id;
         state.winner = 0;
         memset(board, 0, sizeof(board));
     }
@@ -268,26 +270,29 @@ struct GameRoom {
     void processMove(int clientIndex, int row, int col) {
         if (state.winner != 0) return;
         if (clientIndex < 0 || clientIndex >= static_cast<int>(clients.size())) return;
-        int player = clientIndex + 1; // 玩家1(黑)或玩家2(白)
-        if (player != state.currentPlayer) return;
+
+        int playerId = clients[clientIndex].id;
+        if (playerId != state.currentPlayer) return;
         if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return;
         if (board[row][col] != 0) return;
 
-        // 落子
-        board[row][col] = player;
+        // board 存储用于渲染：1=黑子, 2=白子
+        int stonePlayer = (playerId == state.player1Id) ? 1 : 2;
+        board[row][col] = stonePlayer;
+
         Stone stone;
         stone.row = row;
         stone.col = col;
-        stone.player = player;
+        stone.player = stonePlayer;
         state.stones.push_back(stone);
 
         // 检查胜负
-        if (checkWin(row, col, player)) {
-            state.winner = player;
-            LOG("WIN", "Player %d wins!", player);
+        if (checkWin(row, col, stonePlayer)) {
+            state.winner = playerId;
+            LOG("WIN", "Player %d wins!", playerId);
         } else {
-            // 切换玩家
-            state.currentPlayer = (state.currentPlayer == 1) ? 2 : 1;
+            // 切换玩家（用实际 ID）
+            state.currentPlayer = (state.currentPlayer == state.player1Id) ? state.player2Id : state.player1Id;
         }
 
         broadcastGameState();
@@ -328,7 +333,7 @@ int main() {
 
     listen(listenSock, SOMAXCONN);
     LOG("INIT", "=== Gomoku Server ===");
-    LOG("INIT", "Listening on ws://localhost:9003");
+    LOG("INIT", "Listening on ws://0.0.0.0:9003");
     LOG("INIT", "=====================");
 
     GameRoom room;
@@ -385,9 +390,9 @@ int main() {
                     std::vector<u8> payload;
                     while (parseWsFrame(client.recvBuf, consumed, opcode, payload)) {
                         client.recvBuf.erase(client.recvBuf.begin(), client.recvBuf.begin() + consumed);
-                        if (opcode == WsOpcode::Binary && payload.size() > 1) {
+                        if (opcode == WsOpcode::Binary && payload.size() >= 1) {
                             MsgType type = static_cast<MsgType>(payload[0]);
-                            if (type == MsgType::Move) {
+                            if (type == MsgType::Move && payload.size() > 1) {
                                 std::stringstream ss;
                                 ss.write(reinterpret_cast<const char*>(&payload[1]), payload.size() - 1);
                                 Move move;
@@ -399,6 +404,10 @@ int main() {
                                     if (room.clients[j].sock == client.sock) { idx = j; break; }
                                 }
                                 room.processMove(idx, move.row, move.col);
+                            } else if (type == MsgType::Restart) {
+                                LOG("RESTART", "Restart requested by player");
+                                room.resetGame();
+                                room.broadcastGameState();
                             }
                         } else if (opcode == WsOpcode::Close) {
                             client.connected = false;

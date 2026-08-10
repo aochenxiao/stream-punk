@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 /*
-    这个库汉语名称: 流水账
+    这个库汉语名称: 狂流
     英文名:StreamPunk
 
     基础功能:

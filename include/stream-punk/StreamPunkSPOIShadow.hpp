@@ -29,6 +29,7 @@
 #include <vector>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 #include <type_traits>
 
 namespace sp {
@@ -83,9 +84,9 @@ struct SPOIShadowField {
         }
     }
 
-    // ===== 容器操作（仅当 FieldType 有 value_type 时可用）=====
+    // ===== 容器操作（仅当 FieldType 有 value_type 且不是 std::string 时可用）=====
 
-    template<typename U = FieldType> requires requires { typename U::value_type; }
+    template<typename U = FieldType> requires (requires { typename U::value_type; } && !is_string_v<U>)
     void append(typename U::value_type const& elem) {
         std::stringstream valSS;
         O o(valSS);
@@ -101,12 +102,83 @@ struct SPOIShadowField {
         _buf.push_back(std::move(inst));
     }
 
-    template<typename U = FieldType> requires requires { typename U::value_type; }
+    template<typename U = FieldType> requires (requires { typename U::value_type; } && !is_string_v<U>)
     void remove(u32 idx) {
         SpoiInstruction inst;
         inst.op = static_cast<u8>(SpoiOp::e_remove);
         inst.path = _path;
         inst.path.push_back(idx);  // executor 从 path 末尾读取元素索引
+        _buf.push_back(std::move(inst));
+    }
+
+    // ===== 字符串操作（仅当 FieldType 为 std::string 时可用）=====
+    // 约定（与 Executor 的 is_string_v 分支一一对应）：
+    //   - append(chunk)          e_append   operand = 序列化(std::string chunk)
+    //   - insert(pos, chunk)     e_insert   path += [pos]，operand = 序列化(chunk)
+    //   - erase(pos, len)        e_remove   path += [pos]，operand = 序列化(u32 len)
+    //   - replace(pos,len,chunk) e_replace  path += [pos]，operand = 序列化(u32 len) + 序列化(chunk)
+    //   - move(from,len,to)      e_move     path += [from, len, to]，operand 为空
+    // 序列化均复用 StreamPunk 的 O/I 流，与 e_set 对字符串的编码格式一致（u32 裸 4 字节、string 为 u32 长度 + 字节）。
+
+private:
+    // 将若干参数按 SP 流格式序列化为 operand 字节
+    template<typename... Args>
+    static std::vector<u8> _strOperand(Args const&... args) {
+        std::stringstream ss;
+        O o(ss);
+        (o << ... << args);
+        auto s = ss.str();
+        return std::vector<u8>(s.begin(), s.end());
+    }
+
+public:
+    template<typename U = FieldType> requires is_string_v<U>
+    void append(std::string_view chunk) {
+        SpoiInstruction inst;
+        inst.op = static_cast<u8>(SpoiOp::e_append);
+        inst.path = _path;
+        inst.operand = _strOperand(std::string(chunk));
+        _buf.push_back(std::move(inst));
+    }
+
+    template<typename U = FieldType> requires is_string_v<U>
+    void insert(u32 pos, std::string_view chunk) {
+        SpoiInstruction inst;
+        inst.op = static_cast<u8>(SpoiOp::e_insert);
+        inst.path = _path;
+        inst.path.push_back(pos);
+        inst.operand = _strOperand(std::string(chunk));
+        _buf.push_back(std::move(inst));
+    }
+
+    template<typename U = FieldType> requires is_string_v<U>
+    void erase(u32 pos, u32 len = 1) {
+        SpoiInstruction inst;
+        inst.op = static_cast<u8>(SpoiOp::e_remove);
+        inst.path = _path;
+        inst.path.push_back(pos);
+        inst.operand = _strOperand(len);
+        _buf.push_back(std::move(inst));
+    }
+
+    template<typename U = FieldType> requires is_string_v<U>
+    void replace(u32 pos, u32 len, std::string_view chunk) {
+        SpoiInstruction inst;
+        inst.op = static_cast<u8>(SpoiOp::e_replace);
+        inst.path = _path;
+        inst.path.push_back(pos);
+        inst.operand = _strOperand(len, std::string(chunk));
+        _buf.push_back(std::move(inst));
+    }
+
+    template<typename U = FieldType> requires is_string_v<U>
+    void move(u32 fromPos, u32 len, u32 toPos) {
+        SpoiInstruction inst;
+        inst.op = static_cast<u8>(SpoiOp::e_move);
+        inst.path = _path;
+        inst.path.push_back(fromPos);
+        inst.path.push_back(len);
+        inst.path.push_back(toPos);
         _buf.push_back(std::move(inst));
     }
 };

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { CursorInfo } from '../stream-punk-data';
+import { makeSpoiOps, SpoiInstruction } from '../stream-punk-data';
 
 interface EditorProps {
   document: string;
   users: CursorInfo[];
   myUserId: number;
-  onTextOp: (opType: number, position: number, text: string) => void;
+  onSpoiOps: (ops: SpoiInstruction[]) => void;
   onCursorMove: (position: number) => void;
 }
 
@@ -18,7 +19,7 @@ const Editor: React.FC<EditorProps> = ({
   document,
   users,
   myUserId,
-  onTextOp,
+  onSpoiOps,
   onCursorMove,
 }) => {
   const [localText, setLocalText] = useState(document);
@@ -43,24 +44,14 @@ const Editor: React.FC<EditorProps> = ({
 
     const newText = e.target.value;
     const oldText = localText;
-    const cursorPos = e.target.selectionStart;
 
-    if (newText.length > oldText.length) {
-      // Insert
-      const insertLen = newText.length - oldText.length;
-      const insertPos = cursorPos - insertLen;
-      const inserted = newText.slice(insertPos, cursorPos);
-      onTextOp(0, insertPos, inserted);
-    } else if (newText.length < oldText.length) {
-      // Delete
-      const deleteLen = oldText.length - newText.length;
-      const deletePos = cursorPos;
-      onTextOp(1, deletePos, String(deleteLen));
-    }
+    // 本地 diff → SPOI 增量指令（e_remove / e_insert），仅发送增量，不重传全量
+    const ops = makeSpoiOps(oldText, newText);
+    if (ops.length > 0) onSpoiOps(ops);
 
     setLocalText(newText);
     prevDocRef.current = newText;
-  }, [localText, onTextOp]);
+  }, [localText, onSpoiOps]);
 
   const handleSelect = useCallback(() => {
     const pos = textareaRef.current?.selectionStart ?? 0;

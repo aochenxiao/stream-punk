@@ -1156,6 +1156,7 @@ static void h_insert(SpoiContext&, SpoiInstruction const&) {}
 static void h_replace(SpoiContext&, SpoiInstruction const&) {}
 static void h_reset(SpoiContext&, SpoiInstruction const&) {}
 static void h_setnull(SpoiContext&, SpoiInstruction const&) {}
+static void h_move(SpoiContext&, SpoiInstruction const&) {}
 
 static void h_unimpl(SpoiContext& ctx, SpoiInstruction const& inst) {
     ctx.hasError = true;
@@ -1201,7 +1202,8 @@ static void h_unimpl(SpoiContext& ctx, SpoiInstruction const& inst) {
     X__(h_stride)       /* 0x1F e_stride */ \
     X__(h_adjacent)     /* 0x20 e_adjacent */ \
     X__(h_exec)         /* 0x21 e_exec */ \
-    X__(h_pipe)         /* 0x22 e_pipe */
+    X__(h_pipe)         /* 0x22 e_pipe */ \
+    X__(h_move)         /* 0x23 e_move */
 
 #define X_h_entry(h) &h,
 constexpr SpoiHandler kSpoiHandlers[kSpoiOpCount] = { Xt_SPOI_handler(X_h_entry) };
@@ -1261,9 +1263,10 @@ private:
                     std::cerr << "[SpoiExecutor] write error: " << e.what() << "\n";
                 }
             }
-            // ── 写操作：APPEND / REMOVE / INSERT / REPLACE（容器级操作）──
+            // ── 写操作：APPEND / REMOVE / INSERT / REPLACE / MOVE（容器级操作）──
             else if ((op == SpoiOp::e_append || op == SpoiOp::e_remove
-                   || op == SpoiOp::e_insert || op == SpoiOp::e_replace) && !inst.path.empty()) {
+                   || op == SpoiOp::e_insert || op == SpoiOp::e_replace
+                   || op == SpoiOp::e_move) && !inst.path.empty()) {
                 try {
                     _applyContainerWriteOp(root, inst, op);
                 } catch (std::exception const& e) {
@@ -1372,16 +1375,33 @@ private:
         }
     }
 
-    // ── 容器级写操作：APPEND / REMOVE / INSERT / REPLACE ──
+    // ── 容器级写操作：APPEND / REMOVE / INSERT / REPLACE / MOVE ──
+    // 路径尾部参数个数由操作码决定（与具体容器类型无关，保证线上格式类型无关）：
+    //   APPEND                    0 个参数（path 即容器路径）
+    //   INSERT / REMOVE / REPLACE 1 个参数（pos / idx）
+    //   MOVE                      3 个参数（fromPos, len, toPos）
+    // 字符串特有的额外信息（erase 的 len、replace 的 len+chunk）编码在 operand 中。
     template<typename RootT>
     static void _applyContainerWriteOp(RootT& root, SpoiInstruction const& inst, SpoiOp op) {
-        // 对于 APPEND，path 就是容器路径
-        // 对于 REMOVE/INSERT/REPLACE，path 最后一个段是元素索引，前面是容器路径
         std::vector<u32> containerPath = inst.path;
-        u32 elemIdx = 0;
-        if (op != SpoiOp::e_append && !containerPath.empty()) {
-            elemIdx = containerPath.back();
-            containerPath.pop_back();
+        u32 a0 = 0, a1 = 0, a2 = 0;
+
+        u32 trailing = 0;
+        if (op == SpoiOp::e_insert || op == SpoiOp::e_remove || op == SpoiOp::e_replace) trailing = 1;
+        else if (op == SpoiOp::e_move) trailing = 3;
+
+        if (trailing > 0) {
+            if (containerPath.size() <= trailing) {
+                std::cerr << "[SpoiExecutor] container write op path too short\n";
+                return;
+            }
+            // 从尾部按序弹出：先 a2（最后写入的），再 a1，最后 a0（最靠前的参数）
+            // e_move 的 path 为 [..., from, len, to]，因此 a0=from, a1=len, a2=to
+            if (trailing >= 3) {
+                a2 = containerPath.back(); containerPath.pop_back();
+                a1 = containerPath.back(); containerPath.pop_back();
+            }
+            if (trailing >= 1) { a0 = containerPath.back(); containerPath.pop_back(); }
         }
 
         if (containerPath.empty()) {
@@ -1390,15 +1410,61 @@ private:
         }
 
         _navigateWith(root, containerPath, [&](auto& container) {
-            _applyContainerOp(container, op, elemIdx, inst.operand);
+            _applyContainerOp(container, op, a0, a1, a2, inst.operand);
         });
     }
 
+    // ── 按具体容器类型应用写操作 ──
+    // a0 = pos / idx，a1 = len（仅 MOVE），a2 = toPos（仅 MOVE）
     template<typename ContainerT>
-    static void _applyContainerOp(ContainerT& container, SpoiOp op, u32 elemIdx, std::vector<u8> const& operand) {
-        if constexpr (is_ordered_container_v<ContainerT>) {
+    static void _applyContainerOp(ContainerT& container, SpoiOp op, u32 a0, u32 a1, u32 a2, std::vector<u8> const& operand) {
+        // ── std::string：把字符串当作字符容器，支持子串级增量操作 ──
+        // operand 编码（与 Shadow 端约定一致）：
+        //   append / insert : 序列化(std::string chunk)
+        //   erase           : 序列化(u32 len)，为空时默认删 1 个字符
+        //   replace         : 序列化(u32 len) + 序列化(std::string chunk)
+        //   move            : operand 为空
+        if constexpr (is_string_v<ContainerT>) {
+            std::string valStr(operand.begin(), operand.end());
+            std::stringstream ss(valStr);
+            I i(ss);
+
+            if (op == SpoiOp::e_append) {
+                std::string chunk;
+                i >> chunk;
+                container.append(chunk);
+            } else if (op == SpoiOp::e_insert) {
+                std::string chunk;
+                i >> chunk;
+                size_t pos = std::min<size_t>(a0, container.size());
+                container.insert(pos, chunk);
+            } else if (op == SpoiOp::e_remove) {
+                u32 len = 1; // 默认删 1 个字符
+                if (!operand.empty()) i >> len;
+                size_t pos = std::min<size_t>(a0, container.size());
+                len = std::min<u32>(len, static_cast<u32>(container.size() - pos));
+                container.erase(pos, len);
+            } else if (op == SpoiOp::e_replace) {
+                u32 len = 0;
+                std::string chunk;
+                i >> len;
+                i >> chunk;
+                size_t pos = std::min<size_t>(a0, container.size());
+                len = std::min<u32>(len, static_cast<u32>(container.size() - pos));
+                container.replace(pos, len, chunk);
+            } else if (op == SpoiOp::e_move) {
+                size_t from = std::min<size_t>(a0, container.size());
+                u32 len = std::min<u32>(a1, static_cast<u32>(container.size() - from));
+                std::string chunk = container.substr(from, len);
+                container.erase(from, len);
+                size_t to = std::min<size_t>(a2, container.size()); // 以擦除后的字符串为基准
+                container.insert(to, chunk);
+            } else {
+                std::cerr << "[SpoiExecutor] string write op not supported\n";
+            }
+        } else if constexpr (is_ordered_container_v<ContainerT>) {
             using ElemT = typename ContainerT::value_type;
-            size_t idx = static_cast<size_t>(elemIdx);
+            size_t idx = static_cast<size_t>(a0);
 
             if (op == SpoiOp::e_append) {
                 ElemT elem{};
@@ -1441,7 +1507,7 @@ private:
             }
         } else if constexpr (is_flist_v<ContainerT>) {
             using ElemT = typename ContainerT::value_type;
-            size_t idx = static_cast<size_t>(elemIdx);
+            size_t idx = static_cast<size_t>(a0);
             size_t dist = static_cast<size_t>(std::distance(container.begin(), container.end()));
 
             if (op == SpoiOp::e_append) {
@@ -1492,7 +1558,7 @@ private:
             }
         } else if constexpr (is_set_container_v<ContainerT>) {
             using ElemT = typename ContainerT::value_type;
-            size_t idx = static_cast<size_t>(elemIdx);
+            size_t idx = static_cast<size_t>(a0);
 
             if (op == SpoiOp::e_append) {
                 ElemT elem{};
@@ -1515,7 +1581,7 @@ private:
         } else if constexpr (is_assoc_container_v<ContainerT>) {
             using KeyT = typename ContainerT::key_type;
             using ValT = typename ContainerT::mapped_type;
-            size_t idx = static_cast<size_t>(elemIdx);
+            size_t idx = static_cast<size_t>(a0);
 
             if (op == SpoiOp::e_append) {
                 // operand 包含序列化的 key + value

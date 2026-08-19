@@ -73,7 +73,10 @@ namespace sp {
     \
     /* ── 控制（0x21-0x22）── */ \
     X__(e_exec)         /* 0x21 执行并返回结果 */ \
-    X__(e_pipe)         /* 0x22 管道连接（链式） */
+    X__(e_pipe)         /* 0x22 管道连接（链式） */ \
+    \
+    /* ── 字符串/容器片段操作（0x23-）── */ \
+    X__(e_move)         /* 0x23 移动片段（当前支持 std::string 子串搬移） */
 
 // 生成枚举
 #define X_spoi_op_enum(name__) name__,

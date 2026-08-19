@@ -18,6 +18,7 @@
 #include <algorithm>
 
 #include "../Data.hpp"
+#include <stream-punk/StreamPunkSPOIExecutor.hpp>
 using namespace sp;
 
 // ==================== 日志 ====================
@@ -37,9 +38,17 @@ inline std::string nowStr() {
 enum class MsgType : u8 {
     Join = 0x01,
     JoinResponse = 0x02,
-    TextOp = 0x03,
+    SpoiOps = 0x03,       // SPOI 指令流（增量编辑）
     CursorUpdate = 0x04,
     UserList = 0x05,
+};
+
+// ==================== 协作文档（SPOI 可寻址的根对象） ====================
+struct CollabDoc : public Base {
+    #define Xt_CollabDoc(X__) \
+    X__(std::string, content, "")
+    CollabDoc() = default;
+    UseData(CollabDoc);
 };
 
 // ==================== 用户颜色 ====================
@@ -61,7 +70,7 @@ struct CollabUser {
 
 class CollabEngine {
 public:
-    std::string document;
+    CollabDoc doc;          // 权威文档（SPOI 根对象）
     int nextUserId = 1;
     int docVersion = 0;
     std::vector<CollabUser> users;
@@ -85,6 +94,13 @@ public:
     }
 
     std::vector<u8> packMsg(MsgType type, const std::string& payload) {
+        std::vector<u8> msg;
+        msg.push_back(static_cast<u8>(type));
+        msg.insert(msg.end(), payload.begin(), payload.end());
+        return msg;
+    }
+
+    std::vector<u8> packMsg(MsgType type, const std::vector<u8>& payload) {
         std::vector<u8> msg;
         msg.push_back(static_cast<u8>(type));
         msg.insert(msg.end(), payload.begin(), payload.end());
@@ -123,7 +139,7 @@ public:
 
         JoinResponse resp;
         resp.userId = userId;
-        resp.document = document;
+        resp.document = doc.content;
         {
             std::lock_guard<std::mutex> lock(mtx);
             for (auto& u : users) {
@@ -139,34 +155,28 @@ public:
         broadcastUserList();
     }
 
-    void handleTextOp(const std::vector<u8>& payload) {
-        std::stringstream ss;
-        ss.write(reinterpret_cast<const char*>(payload.data()), payload.size());
-        TextOp op;
-        I i{ss};
-        i >> op;
-
-        int userId = op.userId;
+    // 收到 SPOI 指令流（增量编辑）：payload = [userId i32 LE][SPOI 指令流]
+    // 应用到权威文档，并把完整 payload（含 userId）广播给其他用户
+    void handleSpoiOps(const std::vector<u8>& payload) {
+        if (payload.size() < 4) return;
+        i32 senderUserId = 0;
+        std::memcpy(&senderUserId, payload.data(), 4);
+        std::vector<u8> ops(payload.begin() + 4, payload.end());
         {
             std::lock_guard<std::mutex> lock(mtx);
-            if (op.opType == 0) {
-                if (op.position >= 0 && op.position <= static_cast<i32>(document.size())) {
-                    document.insert(op.position, op.text);
-                }
-            } else if (op.opType == 1) {
-                int len = std::stoi(op.text);
-                if (op.position >= 0 && op.position + len <= static_cast<i32>(document.size())) {
-                    document.erase(op.position, len);
-                }
+            std::stringstream ss;
+            ss.write(reinterpret_cast<const char*>(ops.data()), ops.size());
+            try {
+                SpoiExecutor exec(ss);
+                exec >> doc;   // 增量应用：INSERT/REMOVE/REPLACE/MOVE/APPEND
+                docVersion++;
+                LOG("SPOI", "user#%d applied %zuB of ops, doc now %zu chars (v%d)",
+                    senderUserId, ops.size(), doc.content.size(), docVersion);
+            } catch (std::exception const& e) {
+                LOG("SPOI", "apply error: %s", e.what());
             }
-            docVersion++;
-            op.version = docVersion;
         }
-
-        std::stringstream ss2;
-        O o2{ss2};
-        o2 << op;
-        broadcast(packMsg(MsgType::TextOp, ss2.str()), userId);
+        broadcast(packMsg(MsgType::SpoiOps, payload), senderUserId);
     }
 
     void handleCursorUpdate(const std::vector<u8>& payload) {
@@ -244,9 +254,9 @@ int main() {
 
     CollabEngine engine;
 
-    engine.document = "Welcome to the collaborative text editor!\n\n"
-                      "Start typing to edit this document together with others.\n\n"
-                      "All changes are synchronized in real-time.\n";
+    engine.doc.content = "Welcome to the collaborative text editor!\n\n"
+                         "Start typing to edit this document together with others.\n\n"
+                         "All changes are synchronized in real-time.\n";
 
     ix::WebSocketServer server(9005, "0.0.0.0");
 
@@ -274,8 +284,9 @@ int main() {
                         case MsgType::Join:
                             engine.handleJoin(ws, payload);
                             break;
-                        case MsgType::TextOp:
-                            engine.handleTextOp(payload);
+                        case MsgType::SpoiOps:
+                            // payload = [userId i32 LE][SPOI 指令流]
+                            engine.handleSpoiOps(payload);
                             break;
                         case MsgType::CursorUpdate:
                             engine.handleCursorUpdate(payload);

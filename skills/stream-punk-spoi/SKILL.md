@@ -109,6 +109,20 @@ shadow.items.remove("shield"); // REMOVE 指令
 // shadow 析构时自动将所有指令写入 deltaStream
 ```
 
+### 字符串字段的增量操作（子串级，v0.2+）
+
+`std::string` 字段除整体赋值（`=` → `e_set`）外，还可以当作字符容器做子串级增量：
+
+```cpp
+shadow.msg.append("!!");            // e_append  追加子串到末尾
+shadow.msg.insert(7, "SPOI ");      // e_insert  在偏移 7 处插入子串
+shadow.msg.erase(0, 5);             // e_remove  删除 [0, 5) 子串（len 默认 1）
+shadow.msg.replace(2, 4, "NEW");    // e_replace 用 "NEW" 替换 [2, 6)
+shadow.msg.move(1, 3, 6);           // e_move    把 [1, 4) 子串搬到偏移 6（原子指令）
+```
+
+约定：pos/len 越界时自动钳制（不崩溃）；`erase` 的 len、`replace` 的 (len+chunk) 编码在 operand 中，与 SP 序列化格式一致。配套示例：`examples/21-string-delta`。
+
 ## 执行器：在服务端执行 SPOI 指令
 
 ```cpp
@@ -217,7 +231,8 @@ void handleNewStroke(Room& room, Stroke& newStroke) {
 
 **判断规则**：
 - 字段是**容器类型**（`vector`、`map` 等）→ 用 `append()` / `remove()` / `insert()`，不要用 `=`
-- 字段是**值类型**（`i32`、`string`、`f64` 等）→ 用 `=` 或 `+=`，这是正确的增量用法
+- 字段是**值类型**（`i32`、`f64` 等）→ 用 `=` 或 `+=`，这是正确的增量用法
+- 字段是 **`std::string`** → 用 `=` 整体覆盖，或用 `append/insert/erase/replace/move` 做子串级增量（见上文）
 - 字段是**整个对象**（`shadow = newState`）→ 这永远不是增量，不要在 SPOI 场景下这样做
 
 ## SPOI 与 WebSocket 消息协议集成

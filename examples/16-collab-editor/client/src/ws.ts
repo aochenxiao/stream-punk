@@ -1,7 +1,7 @@
-import { TextOp, CursorInfo, JoinRequest, JoinResponse, UserListUpdate, I, O } from './stream-punk-data';
+import { SpoiInstruction, SpoiStream, CursorInfo, JoinRequest, JoinResponse, UserListUpdate, I, O } from './stream-punk-data';
 
 export type JoinHandler = (resp: JoinResponse) => void;
-export type TextOpHandler = (op: TextOp) => void;
+export type SpoiOpsHandler = (userId: number, ops: SpoiInstruction[]) => void;
 export type CursorHandler = (cursor: CursorInfo) => void;
 export type UserListHandler = (users: CursorInfo[]) => void;
 export type StatusHandler = (status: string) => void;
@@ -12,7 +12,7 @@ export class CollabWS {
   private ws: WebSocket | null = null;
   private url: string;
   private onJoin: JoinHandler;
-  private onTextOp: TextOpHandler;
+  private onSpoiOps: SpoiOpsHandler;
   private onCursor: CursorHandler;
   private onUserList: UserListHandler;
   private onStatus: StatusHandler;
@@ -20,14 +20,14 @@ export class CollabWS {
 
   constructor(url: string, handlers: {
     onJoin: JoinHandler;
-    onTextOp: TextOpHandler;
+    onSpoiOps: SpoiOpsHandler;
     onCursor: CursorHandler;
     onUserList: UserListHandler;
     onStatus: StatusHandler;
   }) {
     this.url = url;
     this.onJoin = handlers.onJoin;
-    this.onTextOp = handlers.onTextOp;
+    this.onSpoiOps = handlers.onSpoiOps;
     this.onCursor = handlers.onCursor;
     this.onUserList = handlers.onUserList;
     this.onStatus = handlers.onStatus;
@@ -77,9 +77,10 @@ export class CollabWS {
           this.onJoin(resp);
           break;
         }
-        case 0x03: { // TextOp
-          const op = new TextOp().from(new I(buf));
-          this.onTextOp(op);
+        case 0x03: { // SpoiOps: [userId i32 LE][SpoiStream 指令流]
+          const userId = new DataView(buf).getInt32(0, true);
+          const stream = new SpoiStream().from(new I(buf, 4));
+          this.onSpoiOps(userId, stream.instructions);
           break;
         }
         case 0x04: { // CursorUpdate
@@ -117,16 +118,16 @@ export class CollabWS {
     this.send(0x01, o.toBytes());
   }
 
-  sendTextOp(opType: number, position: number, text: string, userId: number, version: number): void {
-    const op = new TextOp();
-    op.opType = opType;
-    op.position = position;
-    op.text = text;
-    op.userId = userId;
-    op.version = version;
+  // 发送 SPOI 指令流（增量编辑）：payload = [userId i32 LE][SpoiStream 字节]
+  sendSpoiOps(userId: number, ops: SpoiInstruction[]): void {
+    const stream = new SpoiStream(ops);
     const o = new O();
-    op.to(o);
-    this.send(0x03, o.toBytes());
+    stream.to(o);
+    const opsBytes = o.toBytes();
+    const payload = new Uint8Array(4 + opsBytes.length);
+    new DataView(payload.buffer).setInt32(0, userId, true);
+    payload.set(opsBytes, 4);
+    this.send(0x03, payload);
   }
 
   sendCursorUpdate(userId: number, userName: string, position: number, color: string): void {

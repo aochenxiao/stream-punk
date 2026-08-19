@@ -3,7 +3,7 @@ import Login from './components/Login';
 import Editor from './components/Editor';
 import UserList from './components/UserList';
 import { CollabWS } from './ws';
-import { JoinResponse, TextOp, CursorInfo } from './stream-punk-data';
+import { JoinResponse, CursorInfo, SpoiInstruction, applySpoiOps } from './stream-punk-data';
 
 const WS_URL = `ws://${window.location.hostname}:9005`;
 
@@ -29,18 +29,9 @@ const App: React.FC = () => {
         if (me) setMyColor(me.color);
         setJoined(true);
       },
-      onTextOp: (op: TextOp) => {
-        if (op.userId === myUserId) return;
-        setDocument((prev) => {
-          if (op.opType === 0) {
-            // Insert
-            return prev.slice(0, op.position) + op.text + prev.slice(op.position);
-          } else {
-            // Delete
-            const len = parseInt(op.text, 10);
-            return prev.slice(0, op.position) + prev.slice(op.position + len);
-          }
-        });
+      onSpoiOps: (userId: number, ops: SpoiInstruction[]) => {
+        if (userId === myUserId) return; // 自己的操作不回放
+        setDocument((prev) => applySpoiOps(prev, ops));
       },
       onCursor: (cursor: CursorInfo) => {
         setUsers((prev) =>
@@ -67,8 +58,10 @@ const App: React.FC = () => {
     ws.join(name);
   }, [myUserId]);
 
-  const handleTextOp = useCallback((opType: number, position: number, text: string) => {
-    wsRef.current?.sendTextOp(opType, position, text, myUserId, 0);
+  // 本地编辑 → 生成 SPOI 增量指令并发送
+  const handleSpoiOps = useCallback((ops: SpoiInstruction[]) => {
+    if (ops.length === 0) return;
+    wsRef.current?.sendSpoiOps(myUserId, ops);
   }, [myUserId]);
 
   const handleCursorMove = useCallback((position: number) => {
@@ -123,7 +116,7 @@ const App: React.FC = () => {
           document={document}
           users={users}
           myUserId={myUserId}
-          onTextOp={handleTextOp}
+          onSpoiOps={handleSpoiOps}
           onCursorMove={handleCursorMove}
         />
       </div>

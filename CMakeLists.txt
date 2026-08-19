@@ -499,6 +499,48 @@ if(BUILD_SP26_REFLECTION)
     add_sp26_test(test-sp26-quick
         test/test_sp26_quick.cpp
     )
+    add_sp26_test(test-sp26-deep-copy
+        test/test_sp26_deep_copy.cpp
+    )
+    add_sp26_test(test-sp26-extra
+        test/test_sp26_extra.cpp
+    )
+    add_sp26_test(test-sp26-comprehensive
+        test/test_sp26_comprehensive.cpp
+    )
+    add_sp26_test(test-sp26-edge-values
+        test/test_sp26_edge_values.cpp
+    )
+    add_sp26_test(test-sp26-edge-pointers
+        test/test_sp26_edge_pointers.cpp
+    )
+    add_sp26_test(test-sp26-edge-containers
+        test/test_sp26_edge_containers.cpp
+    )
+    add_sp26_test(test-sp26-edge-misc
+        test/test_sp26_edge_misc.cpp
+    )
+    # 刁钻缺陷证明（可运行类：运行期 FAIL 即缺陷）
+    add_sp26_test(test-sp26-tricky-misc
+        test/test_sp26_tricky_misc.cpp
+    )
+    add_sp26_test(test-sp26-tricky-pointers
+        test/test_sp26_tricky_pointers.cpp
+    )
+    add_sp26_test(test-sp26-tricky-nested
+        test/test_sp26_tricky_nested.cpp
+    )
+    add_sp26_test(test-sp26-tricky-regress
+        test/test_sp26_tricky_regress.cpp
+    )
+    # 二进制格式兼容交叉测试（参考版 sp vs 反射版 sp26 字节一致）
+    add_sp26_test(test-sp26-binary-compat
+        test/test_sp26_binary_compat.cpp
+    )
+    # 多态指针 + typeID
+    add_sp26_test(test-sp26-tricky-poly
+        test/test_sp26_tricky_poly.cpp
+    )
 
     # 便利目标
     add_custom_target(all-sp26-tests)
@@ -508,6 +550,19 @@ if(BUILD_SP26_REFLECTION)
         test-sp26-advanced
         test-sp26-custom-types
         test-sp26-quick
+        test-sp26-deep-copy
+        test-sp26-extra
+        test-sp26-comprehensive
+        test-sp26-edge-values
+        test-sp26-edge-pointers
+        test-sp26-edge-containers
+        test-sp26-edge-misc
+        test-sp26-tricky-misc
+        test-sp26-tricky-pointers
+        test-sp26-tricky-nested
+        test-sp26-tricky-regress
+        test-sp26-binary-compat
+        test-sp26-tricky-poly
     )
 endif()
 
@@ -533,6 +588,7 @@ if(BUILD_EXAMPLES)
     add_subdirectory(examples/18-iot-sensor)
     add_subdirectory(examples/19-leaderboard)
     add_subdirectory(examples/20-microservice-mesh)
+    add_subdirectory(examples/21-string-delta)
 endif()
 
 # C++26 反射版示例（仅当 BUILD_SP26_REFLECTION=ON 时构建）

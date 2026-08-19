@@ -124,9 +124,8 @@ int main() {
 >     std::vector<std::string> items;
 > };
 > ```
->
-```markdown
-### 💡 核心体验（使用方式完全不变）
+
+### 核心体验（使用方式完全不变）
 
 ```cpp
 Player p{"Alice", 42, 88.5, {"sword", "shield"}};
@@ -137,27 +136,21 @@ Player p2;
 I{ss} >> p2;
 
 std::cout << p.toJson() << std::endl;
-
 ```
-
----
-
-### 📌 行业现状与痛点
+### 行业现状与痛点
 
 截至 2026 年，C++26 静态反射仅在 **GCC 16+** 中有实验性实现。  
 而 **Clang 22.1.8** 以及 **MSVC 2026** 尚未落地。  
 预计 **2029 年之前**，整个 C++ 生态都将处于这一漫长的过渡阶段。
 
-而这三年恰好是 AI 在 Coding 方面发展的黄金关键期：  
-当其他语言凭借强大的动态特性与 AI 形成无缝实时交互时，C++ 显得有些被动。  
-使用 **StreamPunk**，借助 SPOI 协议让 AI 与 C++ 程序建立高效的实时交互机制。
+而这三年恰好是 **AI** 在 **Coding** 方面发展的黄金关键期：  
+当其他语言，凭借强大的动态特性与 **AI** 形成无缝实时交互时，**C++** 显得有些被动。  
+使用 **StreamPunk**，借助 **SPOI** 协议让 **AI** 与 **C++** 程序建立高效的实时交互机制。
 
----
-
-StreamPunk **无反射版** 是当前最为稳健的过渡方案。
+StreamPunk **无反射版** 是当前最为稳健的过渡方案。  
 我目前正在积极推进**基于静态反射的零侵入实现**。
 
-#### 无反射版快速体验（需要 WSL2 + GCC 16）
+#### 反射版快速体验（需要 WSL2 + GCC 16）
 > 通过 CMake：
 >
 > ```bash
@@ -206,8 +199,7 @@ print(p.to_json())  # 同样支持 JSON
 ```
 
 **支持的语言：**
-
-<p align="center">
+<p align="left">
   <img src="https://img.shields.io/badge/-Python-3776AB?style=flat&amp;logo=python&amp;logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/-TypeScript-3178C6?style=flat&amp;logo=typescript&amp;logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&amp;logo=javascript&amp;logoColor=black" alt="JavaScript">
